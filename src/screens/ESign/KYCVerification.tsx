@@ -78,6 +78,7 @@ export const KYCVerification: React.FC<KYCVerificationProps> = ({
       // Check scenario for fraud rejection - ONLY reject fraud_rejection scenario
       const scenario = (application as any).demo_scenario_id as string | undefined;
       console.log('KYC Check - Scenario:', scenario);
+      console.log('KYC Check - Full application:', JSON.stringify(application, null, 2));
       let simulatedScore: number;
       let shouldReject = false;
       let rejectionReason = '';
