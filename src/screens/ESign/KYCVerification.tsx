@@ -25,7 +25,12 @@ export const KYCVerification: React.FC<KYCVerificationProps> = ({
   const [aadhaarUploaded, setAadhaarUploaded] = useState(!!application.aadhaar_uploaded);
 
   // Check if application is already rejected for fraud
-  const isFraudRejected = application.status === 'rejected' && application.rejection_reason?.includes('fraud');
+  // Check both JSON format and legacy text format
+  const isFraudRejected = application.status === 'rejected' && (
+    application.rejection_reason?.includes('fraud') || 
+    application.rejection_reason?.includes('Fraud') ||
+    (application as any).demo_scenario_id === 'fraud_rejection'
+  );
 
   // Check if application is already rejected for poor bank statements
   const isBankRejected = application.status === 'rejected' && application.rejection_reason?.includes('bank statement');
@@ -333,7 +338,8 @@ export const KYCVerification: React.FC<KYCVerificationProps> = ({
                     <strong>Assessment Complete:</strong> KYC verification completed successfully.
                     {fraudScore <= 30 && ' Low fraud risk detected. Safe to proceed.'}
                     {fraudScore > 30 && fraudScore <= 50 && ' Medium fraud risk. Additional verification recommended.'}
-                    {fraudScore > 50 && ' High fraud risk detected. Manual review required.'}
+                    {fraudScore > 50 && isFraudRejected && ' High fraud risk detected. Application rejected.'}
+                    {fraudScore > 50 && !isFraudRejected && ' High fraud risk detected. Manual review required.'}
                   </p>
                 </div>
               )}

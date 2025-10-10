@@ -121,8 +121,8 @@ export const LeadRegistration: React.FC<LeadRegistrationProps> = ({
     },
     {
       id: 'fraud_rejection',
-      title: 'Fraud Review Case',
-      description: 'High fraud risk - requires manual review',
+      title: 'Fraud Rejection Case',
+      description: 'Rejected at KYC - high fraud risk',
       color: 'red',
       data: {
         applicant_name: 'Ravi Patel',

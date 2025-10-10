@@ -24,12 +24,20 @@ export const CreditCheck: React.FC<CreditCheckProps> = ({
   // Check if application is already rejected for poor bank statements
   const isBankRejected = application.status === 'rejected' && application.rejection_reason?.includes('bank statement');
 
+  // Check if application is already rejected for fraud at KYC stage
+  const isFraudRejected = application.status === 'rejected' && (
+    application.rejection_reason?.includes('fraud') || 
+    application.rejection_reason?.includes('Fraud') ||
+    (application as any).demo_scenario_id === 'fraud_rejection'
+  );
+
   // Check if application is in review status
   const isUnderReview = application.credit_decision === 'review';
 
   // Auto-run credit check on mount if not already done
+  // BUT skip if already rejected at KYC for fraud
   useEffect(() => {
-    if (!hasRunCreditCheck && !processing) {
+    if (!isFraudRejected && !hasRunCreditCheck && !processing) {
       runCreditCheck();
     }
   }, []);
@@ -76,7 +84,10 @@ export const CreditCheck: React.FC<CreditCheckProps> = ({
     } else if (scenario === 'bank_rejection') {
       kiScore = 78; // Poor - rejected
     } else if (scenario === 'fraud_rejection') {
+      // This should never happen - fraud rejections stop at KYC
+      // But if it does, give it a very poor score
       kiScore = 88; // Very Poor - rejected
+      console.warn('fraud_rejection scenario reached credit check - should have been stopped at KYC!');
     } else if (scenario === 'high_risk') {
       kiScore = 42; // Good - should be approved
     } else if (scenario === 'climate_adaptive') {
@@ -355,6 +366,37 @@ export const CreditCheck: React.FC<CreditCheckProps> = ({
 
   const kiScore = application.ki_score || 0;
   const decision = application.decision_reasons as any;
+
+  // If application was already rejected at KYC for fraud, show message
+  if (isFraudRejected) {
+    return (
+      <div>
+        <div className="mb-8">
+          <h2 className="text-3xl font-bold text-gray-900 mb-2">Credit Assessment</h2>
+          <p className="text-base text-gray-600">Application was rejected at KYC stage</p>
+        </div>
+        <div className="bg-red-50 border-2 border-red-300 rounded-lg p-8 text-center">
+          <div className="w-20 h-20 bg-red-500 rounded-full flex items-center justify-center mx-auto mb-4">
+            <span className="text-4xl text-white">⚠️</span>
+          </div>
+          <h3 className="text-2xl font-bold text-red-900 mb-2">Application Rejected at KYC</h3>
+          <p className="text-red-700 mb-6">
+            This application was rejected during KYC verification due to high fraud risk. 
+            Credit assessment was not performed.
+          </p>
+          <Button
+            onClick={() => {
+              localStorage.removeItem('mock_loan_applications');
+              window.location.reload();
+            }}
+            className="bg-red-600 hover:bg-red-700 text-white px-8 py-3"
+          >
+            🏠 Start New Application
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div>
