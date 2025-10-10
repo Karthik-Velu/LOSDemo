@@ -149,7 +149,14 @@ export const ESign = (): JSX.Element => {
             <img src={kiOriginateLogo} alt="Ki Originate" className="h-8 w-auto" />
             <div className="truncate">
               <h1 className="text-xl font-semibold truncate">Loan Application</h1>
-              <p className="text-sm text-blue-200 truncate">ID: {application.loan_id}</p>
+              <div className="flex items-center gap-2">
+                <p className="text-sm text-blue-200 truncate">ID: {application.loan_id}</p>
+                {(application as any).demo_scenario_id && (
+                  <span className="text-xs bg-white/20 px-2 py-0.5 rounded">
+                    Scenario: {(application as any).demo_scenario_id}
+                  </span>
+                )}
+              </div>
             </div>
           </div>
           <div className="flex items-center gap-4">
