@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from "react";
+import kiOriginateLogo from "../../assets/ki-originate-logo.svg";
 import { supabase, type LoanApplication } from "../../lib/supabase";
 import { LeadRegistration } from "./LeadRegistration";
+import { OTPVerification } from "./OTPVerification";
+import { DocumentUpload } from "./DocumentUpload";
 import { KYCVerification } from "./KYCVerification";
 import { CreditCheck } from "./CreditCheck";
 import { Disbursement } from "./Disbursement";
@@ -14,18 +17,30 @@ const workflowSteps = [
   },
   {
     id: 2,
-    key: 'kyc' as const,
-    title: "KYC Verification",
-    description: "KYC capture & fraud check",
+    key: 'otp_verification' as const,
+    title: "OTP Verification",
+    description: "Bureau & bank statement consent",
   },
   {
     id: 3,
+    key: 'document_upload' as const,
+    title: "Document Upload",
+    description: "PAN & Aadhaar verification",
+  },
+  {
+    id: 4,
+    key: 'kyc' as const,
+    title: "KYC Verification",
+    description: "Identity & fraud check",
+  },
+  {
+    id: 5,
     key: 'credit_check' as const,
     title: "Credit Check",
     description: "Credit bureau & decision",
   },
   {
-    id: 4,
+    id: 6,
     key: 'disbursement' as const,
     title: "Disbursement",
     description: "Agreement & payment",
@@ -54,9 +69,15 @@ export const ESign = (): JSX.Element => {
       if (fetchError) throw fetchError;
 
       if (existingApps) {
-        setApplication(existingApps);
-        const stageIndex = workflowSteps.findIndex(s => s.key === existingApps.current_stage);
-        setCurrentStepIndex(stageIndex >= 0 ? stageIndex : 0);
+        // Ensure OTP verification fields are initialized
+        const appWithDefaults = {
+          ...existingApps,
+          bureau_otp_verified: existingApps.bureau_otp_verified ?? false,
+          bank_otp_verified: existingApps.bank_otp_verified ?? false,
+        };
+        setApplication(appWithDefaults);
+        // Always start at step 0 for new sessions, regardless of current_stage
+        setCurrentStepIndex(0);
       } else {
         const { data: newApp, error: createError } = await supabase
           .from('loan_applications')
@@ -64,6 +85,8 @@ export const ESign = (): JSX.Element => {
             current_stage: 'lead_registration',
             status: 'draft',
             loan_officer: 'Rajesh Verma',
+            bureau_otp_verified: false,
+            bank_otp_verified: false,
           }])
           .select()
           .single();
@@ -82,6 +105,7 @@ export const ESign = (): JSX.Element => {
     if (!application) return;
 
     try {
+      console.log('ESign - Updating application with:', updates);
       const { data, error } = await supabase
         .from('loan_applications')
         .update(updates)
@@ -90,10 +114,11 @@ export const ESign = (): JSX.Element => {
         .single();
 
       if (error) throw error;
+      console.log('ESign - Application updated. New state:', data);
       setApplication(data);
       return data;
     } catch (error) {
-      console.error('Error updating application:', error);
+      console.error('ESign - Update error:', error);
       throw error;
     }
   };
@@ -126,46 +151,109 @@ export const ESign = (): JSX.Element => {
     <div className="bg-white w-full min-w-[360px] min-h-screen">
       <header className="bg-[#11287c] text-white px-6 py-4 shadow-md">
         <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-xl font-semibold">Loan Application</h1>
-            <p className="text-sm text-blue-200">ID: {application.loan_id}</p>
+          <div className="flex items-center gap-3 min-w-0">
+            <img src={kiOriginateLogo} alt="Ki Originate" className="h-8 w-auto" />
+            <div className="truncate">
+              <h1 className="text-xl font-semibold truncate">Loan Application</h1>
+              <p className="text-sm text-blue-200 truncate">ID: {application.loan_id}</p>
+            </div>
           </div>
-          <div className="text-right">
-            <p className="text-sm">Loan Officer</p>
-            <p className="text-sm font-medium">{application.loan_officer}</p>
+          <div className="flex items-center gap-4">
+            <button
+              onClick={() => {
+                if (confirm('Clear all data and start fresh demo?')) {
+                  localStorage.removeItem('mock_loan_applications');
+                  window.location.reload();
+                }
+              }}
+              className="text-sm bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded transition"
+            >
+              🔄 Restart Demo
+            </button>
+            <div className="text-right">
+              <p className="text-sm">Loan Officer</p>
+              <p className="text-sm font-medium">{application.loan_officer}</p>
+            </div>
           </div>
         </div>
       </header>
 
-      <div className="px-6 py-4">
-        <div className="flex items-center justify-between mb-6">
-          {workflowSteps.map((step, index) => (
-            <div key={step.id} className="flex flex-col items-center flex-1">
-              <div className="flex items-center w-full">
-                {index > 0 && (
-                  <div className={`flex-1 h-1 ${index <= currentStepIndex ? 'bg-[#11287c]' : 'bg-gray-300'}`} />
-                )}
-                <div
-                  className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold transition-all ${
-                    index === currentStepIndex
-                      ? 'bg-[#11287c] text-white ring-4 ring-blue-200'
-                      : index < currentStepIndex
-                      ? 'bg-green-500 text-white'
-                      : 'bg-gray-300 text-gray-600'
-                  }`}
-                >
-                  {index < currentStepIndex ? '✓' : step.id}
-                </div>
-                {index < workflowSteps.length - 1 && (
-                  <div className={`flex-1 h-1 ${index < currentStepIndex ? 'bg-[#11287c]' : 'bg-gray-300'}`} />
-                )}
-              </div>
-              <div className="mt-2 text-center">
-                <p className="text-xs font-medium text-gray-900">{step.title}</p>
-                <p className="text-xs text-gray-500">{step.description}</p>
-              </div>
+      <div className="px-6 py-6 max-w-7xl mx-auto">
+        {/* Modern Stepper */}
+        <div className="mb-8 overflow-x-auto">
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 min-w-[700px]">
+            <div className="flex items-start justify-between gap-2">
+              {workflowSteps.map((step, index) => (
+                <React.Fragment key={step.id}>
+                  <div className="flex flex-col items-center flex-1 min-w-0">
+                    {/* Step Circle */}
+                    <div className="relative">
+                      <div
+                        className={`w-12 h-12 rounded-full flex items-center justify-center text-base font-bold transition-all shadow-md ${
+                          index === currentStepIndex
+                            ? 'bg-gradient-to-br from-[#11287c] to-[#1e3a8a] text-white ring-4 ring-blue-200 scale-110'
+                            : index < currentStepIndex
+                            ? 'bg-gradient-to-br from-green-500 to-green-600 text-white'
+                            : 'bg-gray-200 text-gray-500'
+                        }`}
+                      >
+                        {index < currentStepIndex ? (
+                          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                          </svg>
+                        ) : (
+                          step.id
+                        )}
+                      </div>
+                      {/* Active indicator */}
+                      {index === currentStepIndex && (
+                        <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2">
+                          <div className="w-2 h-2 rounded-full bg-[#11287c] animate-pulse"></div>
+                        </div>
+                      )}
+                    </div>
+                    
+                    {/* Step Info */}
+                    <div className="mt-3 text-center px-1">
+                      <p className={`text-sm font-semibold leading-tight ${
+                        index === currentStepIndex 
+                          ? 'text-[#11287c]' 
+                          : index < currentStepIndex 
+                          ? 'text-green-700' 
+                          : 'text-gray-600'
+                      }`}>
+                        {step.title}
+                      </p>
+                      <p className={`text-xs mt-1 leading-tight ${
+                        index === currentStepIndex 
+                          ? 'text-gray-700' 
+                          : 'text-gray-500'
+                      }`}>
+                        {step.description}
+                      </p>
+                    </div>
+                  </div>
+                  
+                  {/* Connector Line */}
+                  {index < workflowSteps.length - 1 && (
+                    <div className="flex items-center" style={{ marginTop: '24px' }}>
+                      <div className="relative h-1 w-8 lg:w-12">
+                        <div className="absolute inset-0 bg-gray-200 rounded-full"></div>
+                        <div 
+                          className={`absolute inset-0 rounded-full transition-all duration-500 ${
+                            index < currentStepIndex ? 'bg-gradient-to-r from-green-500 to-green-600' : 'bg-gray-200'
+                          }`}
+                          style={{
+                            width: index < currentStepIndex ? '100%' : '0%'
+                          }}
+                        ></div>
+                      </div>
+                    </div>
+                  )}
+                </React.Fragment>
+              ))}
             </div>
-          ))}
+          </div>
         </div>
 
         <div className="bg-gray-50 rounded-lg p-6 min-h-[400px]">
@@ -174,6 +262,22 @@ export const ESign = (): JSX.Element => {
               application={application}
               onUpdate={updateApplication}
               onNext={moveToNextStep}
+            />
+          )}
+          {currentStep.key === 'otp_verification' && (
+            <OTPVerification
+              application={application}
+              onUpdate={updateApplication}
+              onNext={moveToNextStep}
+              onBack={moveToPreviousStep}
+            />
+          )}
+          {currentStep.key === 'document_upload' && (
+            <DocumentUpload
+              application={application}
+              onUpdate={updateApplication}
+              onNext={moveToNextStep}
+              onBack={moveToPreviousStep}
             />
           )}
           {currentStep.key === 'kyc' && (
@@ -197,6 +301,11 @@ export const ESign = (): JSX.Element => {
               application={application}
               onUpdate={updateApplication}
               onBack={moveToPreviousStep}
+              onRestart={() => {
+                // Clear localStorage and reload
+                localStorage.removeItem('mock_loan_applications');
+                window.location.reload();
+              }}
             />
           )}
         </div>

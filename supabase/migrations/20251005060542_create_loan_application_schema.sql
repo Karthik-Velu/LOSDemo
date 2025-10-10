@@ -101,6 +101,12 @@ CREATE TABLE IF NOT EXISTS loan_applications (
   coapplicant_pan text,
   coapplicant_aadhaar text,
   
+  -- OTP verification information
+  bureau_otp_verified boolean DEFAULT false,
+  bureau_otp_verified_at timestamptz,
+  bank_otp_verified boolean DEFAULT false,
+  bank_otp_verified_at timestamptz,
+
   -- KYC information
   kyc_status text DEFAULT 'pending',
   kyc_verified_at timestamptz,
@@ -134,6 +140,9 @@ CREATE TABLE IF NOT EXISTS loan_applications (
   disbursed_amount numeric,
   disbursed_at timestamptz,
   disbursement_reference text,
+
+  -- Rejection information
+  rejection_reason text,
   
   -- Constraints
   CONSTRAINT valid_stage CHECK (current_stage IN ('lead_registration', 'kyc', 'credit_check', 'disbursement')),
