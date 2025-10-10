@@ -87,7 +87,17 @@ export const KYCVerification: React.FC<KYCVerificationProps> = ({
         console.log('Fraud rejection scenario - will reject');
         simulatedScore = 85; // Very high fraud score
         shouldReject = true;
-        rejectionReason = 'Application rejected due to high fraud risk: Multiple identity mismatches detected, suspicious SIM tenure (only 2 months), email created recently (1 month), 15 anomalous bank transactions in last 3 months, address verification failed across multiple sources.';
+        rejectionReason = JSON.stringify({
+          title: 'High Fraud Risk Detected',
+          reasons: [
+            'Multiple identity mismatches detected across verification sources',
+            'Suspicious SIM tenure - only 2 months old',
+            'Email created recently - only 1 month ago',
+            '15 anomalous bank transactions identified in last 3 months',
+            'Address verification failed across multiple data sources',
+            'Overall identity match score: 43% (threshold: 85%)'
+          ]
+        });
       } else {
         // All other scenarios pass KYC with low fraud scores
         console.log('Normal scenario - will pass KYC');
@@ -200,7 +210,7 @@ export const KYCVerification: React.FC<KYCVerificationProps> = ({
         <div className="bg-white p-6 rounded-xl shadow-md border border-gray-100">
           <div className="flex items-center gap-2 mb-6">
             <img src={kiLogo} alt="Ki Score" className="h-6 w-auto" />
-            <h3 className="text-xl font-semibold text-gray-900">KYC Documents & Verification</h3>
+            <h3 className="text-xl font-semibold text-gray-900">KYC Check</h3>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-[300px_1fr] gap-6 mb-6">
@@ -460,9 +470,34 @@ export const KYCVerification: React.FC<KYCVerificationProps> = ({
                     </div>
                   </div>
 
-                  <div className="bg-white p-4 rounded border border-red-200 mb-4">
-                    <h4 className="font-semibold text-red-900 mb-2">Rejection Reason</h4>
-                    <p className="text-sm text-red-800">{application.rejection_reason}</p>
+                  <div className="bg-white p-5 rounded-lg border border-red-200 mb-4">
+                    {(() => {
+                      try {
+                        const parsed = JSON.parse(application.rejection_reason || '{}');
+                        return (
+                          <>
+                            <h4 className="font-bold text-red-900 mb-3 text-base">{parsed.title || 'Rejection Reasons'}</h4>
+                            <ul className="space-y-2">
+                              {(parsed.reasons || [application.rejection_reason]).map((reason: string, idx: number) => (
+                                <li key={idx} className="flex items-start gap-3">
+                                  <span className="flex-shrink-0 w-6 h-6 bg-red-100 rounded-full flex items-center justify-center mt-0.5">
+                                    <span className="text-red-600 text-xs font-bold">✕</span>
+                                  </span>
+                                  <span className="text-sm text-red-800 leading-relaxed">{reason}</span>
+                                </li>
+                              ))}
+                            </ul>
+                          </>
+                        );
+                      } catch {
+                        return (
+                          <>
+                            <h4 className="font-semibold text-red-900 mb-2">Rejection Reason</h4>
+                            <p className="text-sm text-red-800">{application.rejection_reason}</p>
+                          </>
+                        );
+                      }
+                    })()}
                   </div>
 
                   <div className="text-center">

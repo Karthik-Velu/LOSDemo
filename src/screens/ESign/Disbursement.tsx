@@ -203,7 +203,7 @@ export const Disbursement: React.FC<DisbursementProps> = ({
                     disabled={processing || !selectedAccountId}
                     className="bg-[#11287c] hover:bg-[#1e3a8a] text-white w-full"
                   >
-                    {processing ? 'Verifying...' : 'Run Penny Drop Test'}
+                    {processing ? 'Verifying...' : 'Penny Drop for Bank Account Verification'}
                   </Button>
                 </div>
               )}

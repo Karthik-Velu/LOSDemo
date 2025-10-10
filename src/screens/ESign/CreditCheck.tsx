@@ -79,6 +79,8 @@ export const CreditCheck: React.FC<CreditCheckProps> = ({
       kiScore = 88; // Very Poor - rejected
     } else if (scenario === 'high_risk') {
       kiScore = 42; // Good - should be approved
+    } else if (scenario === 'climate_adaptive') {
+      kiScore = 44; // Good - approved with adaptive tenure
     } else {
       kiScore = Math.floor(Math.random() * 40) + 25;
     }

@@ -202,6 +202,27 @@ export const LeadRegistration: React.FC<LeadRegistrationProps> = ({
         coapplicant_aadhaar: '9876 5432 1098',
         requested_amount: '45000',
       }
+    },
+    {
+      id: 'climate_adaptive',
+      title: 'Climate Risk - Adaptive Repayment',
+      description: 'Agriculture with climate stress',
+      color: 'orange',
+      data: {
+        applicant_name: 'Suresh Yadav',
+        applicant_phone: '+91 98765 43230',
+        applicant_email: 'suresh.yadav@email.com',
+        applicant_address: 'Village Mahrajganj, Post Office Mahrajganj, Tehsil Gola, District Gorakhpur, Uttar Pradesh - 273001',
+        applicant_pan: 'STUV3456W',
+        applicant_aadhaar: '2468 1357 9024',
+        coapplicant_name: 'Sangeeta Yadav',
+        coapplicant_phone: '+91 98765 43231',
+        coapplicant_email: 'sangeeta.yadav@email.com',
+        coapplicant_address: 'Village Mahrajganj, Post Office Mahrajganj, Tehsil Gola, District Gorakhpur, Uttar Pradesh - 273001',
+        coapplicant_pan: 'WXYZ7890X',
+        coapplicant_aadhaar: '1357 2468 0135',
+        requested_amount: '60000',
+      }
     }
   ];
 
@@ -348,26 +369,32 @@ export const LeadRegistration: React.FC<LeadRegistrationProps> = ({
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   PAN Number
+                  <span className="ml-2 text-xs text-gray-500 font-normal">(Permanent Account Number - Tax ID)</span>
                 </label>
                 <input
                   type="text"
                   name="applicant_pan"
                   value={formData.applicant_pan}
                   onChange={handleChange}
+                  placeholder="e.g., ABCDE1234F"
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#11287c] focus:border-transparent"
                 />
+                <p className="text-xs text-gray-500 mt-1">10-character alphanumeric tax identifier issued by Income Tax Department</p>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Aadhaar Number
+                  <span className="ml-2 text-xs text-gray-500 font-normal">(Unique ID - Government issued)</span>
                 </label>
                 <input
                   type="text"
                   name="applicant_aadhaar"
                   value={formData.applicant_aadhaar}
                   onChange={handleChange}
+                  placeholder="e.g., 1234 5678 9012"
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#11287c] focus:border-transparent"
                 />
+                <p className="text-xs text-gray-500 mt-1">12-digit unique identification number issued by UIDAI</p>
               </div>
             </div>
           </div>
