@@ -161,6 +161,198 @@ export const KYCVerification: React.FC<KYCVerificationProps> = ({
       </div>
 
       <div className="space-y-6">
+        {/* Document Upload Section */}
+        <div className="bg-white p-6 rounded-lg shadow-sm border-2 border-blue-100">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+            <span className="text-xl">📄</span>
+            Document Verification
+          </h3>
+          
+          {uploading ? (
+            <div className="space-y-4">
+              <div className="flex items-center gap-3 p-3 bg-blue-50 rounded-lg">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                <div className="flex-1">
+                  <p className="font-medium text-gray-900">
+                    {!panUploaded ? 'Uploading PAN Card...' : 'Uploading Aadhaar Card...'}
+                  </p>
+                  <p className="text-sm text-gray-600">Please wait while we verify your documents</p>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className={`p-4 rounded-lg border-2 ${panUploaded ? 'bg-green-50 border-green-300' : 'bg-gray-50 border-gray-300'}`}>
+                <div className="flex items-center gap-3 mb-2">
+                  <div className={`w-10 h-10 rounded-full flex items-center justify-center ${panUploaded ? 'bg-green-500' : 'bg-gray-300'}`}>
+                    {panUploaded ? (
+                      <span className="text-white text-xl font-bold">✓</span>
+                    ) : (
+                      <span className="text-gray-600 text-xl">📄</span>
+                    )}
+                  </div>
+                  <div className="flex-1">
+                    <h4 className="font-semibold text-gray-900">PAN Card</h4>
+                    <p className="text-xs text-gray-600">Tax Identification Document</p>
+                  </div>
+                </div>
+                {panUploaded && (
+                  <div className="mt-2 text-sm">
+                    <p className="text-gray-700"><strong>Number:</strong> {application.applicant_pan}</p>
+                    <p className="text-gray-700"><strong>Name:</strong> {application.applicant_name}</p>
+                    <p className="text-green-600 font-medium text-xs mt-1">✓ Verified</p>
+                  </div>
+                )}
+              </div>
+
+              <div className={`p-4 rounded-lg border-2 ${aadhaarUploaded ? 'bg-green-50 border-green-300' : 'bg-gray-50 border-gray-300'}`}>
+                <div className="flex items-center gap-3 mb-2">
+                  <div className={`w-10 h-10 rounded-full flex items-center justify-center ${aadhaarUploaded ? 'bg-green-500' : 'bg-gray-300'}`}>
+                    {aadhaarUploaded ? (
+                      <span className="text-white text-xl font-bold">✓</span>
+                    ) : (
+                      <span className="text-gray-600 text-xl">📄</span>
+                    )}
+                  </div>
+                  <div className="flex-1">
+                    <h4 className="font-semibold text-gray-900">Aadhaar Card</h4>
+                    <p className="text-xs text-gray-600">Unique ID Document</p>
+                  </div>
+                </div>
+                {aadhaarUploaded && (
+                  <div className="mt-2 text-sm">
+                    <p className="text-gray-700"><strong>Number:</strong> {application.applicant_aadhaar}</p>
+                    <p className="text-gray-700"><strong>Name:</strong> {application.applicant_name}</p>
+                    <p className="text-green-600 font-medium text-xs mt-1">✓ Verified</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Fraud Risk Assessment Section - Moved to Top */}
+        <div className="bg-white p-6 rounded-lg shadow-sm border-2 border-orange-100">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+            <span className="text-xl">🛡️</span>
+            Fraud Risk Assessment
+          </h3>
+
+          {processing ? (
+            <div className="text-center py-8">
+              <div className="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4 animate-pulse">
+                <span className="text-4xl">🔍</span>
+              </div>
+              <p className="text-gray-600 mb-2 font-medium">Running KYC Verification...</p>
+              <p className="text-sm text-gray-500">Checking identity documents and fraud risk</p>
+            </div>
+          ) : application.kyc_status === 'verified' ? (
+            <div>
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <div className="flex items-center gap-2 mb-2">
+                    <img src={kiLogo} alt="Ki Score" className="h-6 w-auto" />
+                    <p className="text-sm text-gray-600">Fraud Ki Score</p>
+                  </div>
+                  <p className={`text-4xl font-bold ${getRiskColor(fraudScore)}`}>
+                    {fraudScore}
+                  </p>
+                  <p className="text-xs text-gray-500">(0-100, lower is better)</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-600 mb-2">Risk Level</p>
+                  <span className={`px-4 py-2 rounded-full text-sm font-medium ${getRiskBadge(application.fraud_risk_level)}`}>
+                    {application.fraud_risk_level?.toUpperCase()}
+                  </span>
+                </div>
+              </div>
+
+              {/* Show rejection banner if fraud rejected */}
+              {isFraudRejected && (
+                <div className="mt-4 p-6 bg-red-50 border-2 border-red-300 rounded-lg">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="w-12 h-12 bg-red-500 rounded-full flex items-center justify-center text-white text-xl flex-shrink-0">
+                      ⚠️
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-semibold text-red-900">Application Rejected</h3>
+                      <p className="text-sm text-red-700">High fraud risk detected</p>
+                    </div>
+                  </div>
+
+                  <div className="bg-white p-5 rounded-lg border border-red-200 mb-4">
+                    {(() => {
+                      try {
+                        const parsed = JSON.parse(application.rejection_reason || '{}');
+                        return (
+                          <>
+                            <h4 className="font-bold text-red-900 mb-3 text-base">{parsed.title || 'Rejection Reasons'}</h4>
+                            <ul className="space-y-2">
+                              {(parsed.reasons || [application.rejection_reason]).map((reason: string, idx: number) => (
+                                <li key={idx} className="flex items-start gap-3">
+                                  <span className="flex-shrink-0 w-6 h-6 bg-red-100 rounded-full flex items-center justify-center mt-0.5">
+                                    <span className="text-red-600 text-xs font-bold">✕</span>
+                                  </span>
+                                  <span className="text-sm text-red-800 leading-relaxed">{reason}</span>
+                                </li>
+                              ))}
+                            </ul>
+                          </>
+                        );
+                      } catch {
+                        return (
+                          <>
+                            <h4 className="font-semibold text-red-900 mb-2">Rejection Reason</h4>
+                            <p className="text-sm text-red-800">{application.rejection_reason}</p>
+                          </>
+                        );
+                      }
+                    })()}
+                  </div>
+
+                  <div className="text-center">
+                    <p className="text-sm text-gray-600 mb-4">This application has been rejected and cannot proceed further.</p>
+                    <Button
+                      onClick={() => {
+                        localStorage.removeItem('mock_loan_applications');
+                        window.location.reload();
+                      }}
+                      className="px-8 py-3 text-base"
+                    >
+                      🏠 Start New Application
+                    </Button>
+                  </div>
+                </div>
+              )}
+
+              {/* Show success message if not rejected */}
+              {!isFraudRejected && (
+                <div className="mt-4 p-4 bg-blue-50 rounded border border-blue-200">
+                  <p className="text-sm text-blue-900">
+                    <strong>Assessment Complete:</strong> KYC verification completed successfully.
+                    {fraudScore <= 30 && ' Low fraud risk detected. Safe to proceed.'}
+                    {fraudScore > 30 && fraudScore <= 50 && ' Medium fraud risk. Additional verification recommended.'}
+                    {fraudScore > 50 && ' High fraud risk detected. Manual review required.'}
+                  </p>
+                </div>
+              )}
+
+              <div className="mt-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Verification Notes
+                </label>
+                <textarea
+                  value={kycNotes}
+                  onChange={(e) => setKycNotes(e.target.value)}
+                  rows={3}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#11287c] focus:border-transparent"
+                  placeholder="Add any additional notes about the verification..."
+                />
+              </div>
+            </div>
+          ) : null}
+        </div>
+
         <div className="bg-white p-6 rounded-lg shadow-sm">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">Applicant Information</h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
@@ -423,124 +615,6 @@ export const KYCVerification: React.FC<KYCVerificationProps> = ({
               </div>
             </div>
           </div>
-        </div>
-
-        <div className="bg-white p-6 rounded-lg shadow-sm">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Fraud Risk Assessment</h3>
-
-          {processing ? (
-            <div className="text-center py-8">
-              <div className="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4 animate-pulse">
-                <span className="text-4xl">🔍</span>
-              </div>
-              <p className="text-gray-600 mb-2 font-medium">Running KYC Verification...</p>
-              <p className="text-sm text-gray-500">Checking identity documents and fraud risk</p>
-            </div>
-          ) : application.kyc_status === 'verified' ? (
-            <div>
-              <div className="flex items-center justify-between mb-4">
-                <div>
-                  <div className="flex items-center gap-2 mb-2">
-                    <img src={kiLogo} alt="Ki Score" className="h-6 w-auto" />
-                    <p className="text-sm text-gray-600">Fraud Ki Score</p>
-                  </div>
-                  <p className={`text-4xl font-bold ${getRiskColor(fraudScore)}`}>
-                    {fraudScore}
-                  </p>
-                  <p className="text-xs text-gray-500">(0-100, lower is better)</p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-600 mb-2">Risk Level</p>
-                  <span className={`px-4 py-2 rounded-full text-sm font-medium ${getRiskBadge(application.fraud_risk_level)}`}>
-                    {application.fraud_risk_level?.toUpperCase()}
-                  </span>
-                </div>
-              </div>
-
-              {/* Show rejection banner if fraud rejected */}
-              {isFraudRejected && (
-                <div className="mt-4 p-6 bg-red-50 border-2 border-red-300 rounded-lg">
-                  <div className="flex items-center gap-3 mb-4">
-                    <div className="w-12 h-12 bg-red-500 rounded-full flex items-center justify-center text-white text-xl flex-shrink-0">
-                      ⚠️
-                    </div>
-                    <div>
-                      <h3 className="text-lg font-semibold text-red-900">Application Rejected</h3>
-                      <p className="text-sm text-red-700">High fraud risk detected</p>
-                    </div>
-                  </div>
-
-                  <div className="bg-white p-5 rounded-lg border border-red-200 mb-4">
-                    {(() => {
-                      try {
-                        const parsed = JSON.parse(application.rejection_reason || '{}');
-                        return (
-                          <>
-                            <h4 className="font-bold text-red-900 mb-3 text-base">{parsed.title || 'Rejection Reasons'}</h4>
-                            <ul className="space-y-2">
-                              {(parsed.reasons || [application.rejection_reason]).map((reason: string, idx: number) => (
-                                <li key={idx} className="flex items-start gap-3">
-                                  <span className="flex-shrink-0 w-6 h-6 bg-red-100 rounded-full flex items-center justify-center mt-0.5">
-                                    <span className="text-red-600 text-xs font-bold">✕</span>
-                                  </span>
-                                  <span className="text-sm text-red-800 leading-relaxed">{reason}</span>
-                                </li>
-                              ))}
-                            </ul>
-                          </>
-                        );
-                      } catch {
-                        return (
-                          <>
-                            <h4 className="font-semibold text-red-900 mb-2">Rejection Reason</h4>
-                            <p className="text-sm text-red-800">{application.rejection_reason}</p>
-                          </>
-                        );
-                      }
-                    })()}
-                  </div>
-
-                  <div className="text-center">
-                    <p className="text-sm text-gray-600 mb-4">This application has been rejected and cannot proceed further.</p>
-                    <Button
-                      onClick={() => {
-                        localStorage.removeItem('mock_loan_applications');
-                        window.location.reload();
-                      }}
-                      className="px-8 py-3 text-base"
-                    >
-                      🏠 Start New Application
-                    </Button>
-                  </div>
-                </div>
-              )}
-
-              {/* Show success message if not rejected */}
-              {!isFraudRejected && (
-                <div className="mt-4 p-4 bg-blue-50 rounded border border-blue-200">
-                  <p className="text-sm text-blue-900">
-                    <strong>Assessment Complete:</strong> KYC verification completed successfully.
-                    {fraudScore <= 30 && ' Low fraud risk detected. Safe to proceed.'}
-                    {fraudScore > 30 && fraudScore <= 50 && ' Medium fraud risk. Additional verification recommended.'}
-                    {fraudScore > 50 && ' High fraud risk detected. Manual review required.'}
-                  </p>
-                </div>
-              )}
-
-              <div className="mt-4">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Verification Notes
-                </label>
-                <textarea
-                  value={kycNotes}
-                  onChange={(e) => setKycNotes(e.target.value)}
-                  rows={3}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#11287c] focus:border-transparent"
-                  placeholder="Add any additional notes about the verification..."
-                />
-              </div>
-            </div>
-          ) : null}
         </div>
       </div>
 

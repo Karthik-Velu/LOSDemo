@@ -99,12 +99,16 @@ export const CreditCheck: React.FC<CreditCheckProps> = ({
       creditDecision = 'review'; // Fair - needs manual review
     }
 
+    // Adaptive tenure for climate scenario (longer tenure due to lower rainfall)
+    const isClimateScenario = scenario === 'climate_adaptive';
+    const adaptiveTerm = isClimateScenario ? 18 : 12; // 18 months for climate stress vs 12 normal
+
     const decisionData = {
       ki_score: kiScore,
       eligible_amount: eligibleAmount,
       recommended_amount: recommendedAmount,
-      recommended_term: 12,
-      recommended_apr: 28,
+      recommended_term: adaptiveTerm,
+      recommended_apr: isClimateScenario ? 24 : 28, // Lower APR for climate scenario as gesture of support
       credit_decision: creditDecision,
       credit_checked_at: new Date().toISOString(),
       bureau_data: {
@@ -434,6 +438,32 @@ export const CreditCheck: React.FC<CreditCheckProps> = ({
               </div>
             </div>
           </div>
+
+          {(application as any).demo_scenario_id === 'climate_adaptive' && (
+            <div className="mt-4 p-4 bg-gradient-to-r from-orange-50 to-yellow-50 rounded-lg border border-orange-200">
+              <div className="flex items-start gap-3">
+                <div className="flex-shrink-0 w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center">
+                  <span className="text-xl">🌾</span>
+                </div>
+                <div className="flex-1">
+                  <h4 className="font-bold text-orange-900 mb-2">Climate-Adaptive Repayment Terms</h4>
+                  <p className="text-sm text-orange-800 mb-2">
+                    Based on climate risk analysis showing below-average rainfall (680mm vs 950mm historical average) and 
+                    moderate drought risk, this loan features:
+                  </p>
+                  <ul className="text-sm text-orange-800 space-y-1 ml-4">
+                    <li>• <strong>Extended tenure to 18 months</strong> (vs standard 12 months) to accommodate reduced crop yields</li>
+                    <li>• <strong>Reduced APR to 24%</strong> (vs standard 28%) to support farmer during climate stress</li>
+                    <li>• <strong>Flexible repayment schedule</strong> aligned with harvest seasons considering rainfall patterns</li>
+                  </ul>
+                  <p className="text-xs text-orange-700 mt-2 italic">
+                    Impact on borrower: Lower monthly payments (₹{Math.round((application.recommended_amount || 60000) / 18).toLocaleString('en-IN')} vs 
+                    ₹{Math.round((application.recommended_amount || 60000) / 12).toLocaleString('en-IN')}) to manage cash flow during challenging agricultural conditions.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
         <div className="bg-white p-6 rounded-lg shadow-sm">
@@ -519,26 +549,57 @@ export const CreditCheck: React.FC<CreditCheckProps> = ({
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div className="bg-blue-50 p-4 rounded-lg">
               <div className="flex items-center gap-2 mb-3">
-                <div className="w-8 h-8 bg-blue-600 rounded flex items-center justify-center text-white text-sm font-bold">📊</div>
-                <h4 className="font-semibold text-blue-900">Market Stress Indicators</h4>
+                <div className="w-8 h-8 bg-blue-600 rounded flex items-center justify-center text-white text-sm font-bold">
+                  {(application as any).demo_scenario_id === 'climate_adaptive' ? '🌦️' : '📊'}
+                </div>
+                <h4 className="font-semibold text-blue-900">
+                  {(application as any).demo_scenario_id === 'climate_adaptive' ? 'Climate Risk Indicators' : 'Market Stress Indicators'}
+                </h4>
               </div>
               <div className="space-y-2 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Portfolio at Risk (PAR):</span>
-                  <span className="font-medium text-green-600">2.3% (Low)</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Geographic Saturation:</span>
-                  <span className="font-medium text-yellow-600">68% (Moderate)</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Asset Class Performance:</span>
-                  <span className="font-medium text-green-600">+12% (Strong)</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Demographic Risk:</span>
-                  <span className="font-medium text-green-600">Low Concentration</span>
-                </div>
+                {(application as any).demo_scenario_id === 'climate_adaptive' ? (
+                  <>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Annual Rainfall (2024):</span>
+                      <span className="font-medium text-red-600">680mm (Below Avg)</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Historical Average:</span>
+                      <span className="font-medium text-gray-700">950mm/year</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Drought Risk (Next 6m):</span>
+                      <span className="font-medium text-orange-600">Moderate (45%)</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Flood Risk:</span>
+                      <span className="font-medium text-green-600">Low (12%)</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Crop Yield Impact:</span>
+                      <span className="font-medium text-orange-600">-18% (Rice/Wheat)</span>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Portfolio at Risk (PAR):</span>
+                      <span className="font-medium text-green-600">2.3% (Low)</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Geographic Saturation:</span>
+                      <span className="font-medium text-yellow-600">68% (Moderate)</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Asset Class Performance:</span>
+                      <span className="font-medium text-green-600">+12% (Strong)</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Demographic Risk:</span>
+                      <span className="font-medium text-green-600">Low Concentration</span>
+                    </div>
+                  </>
+                )}
               </div>
             </div>
 
