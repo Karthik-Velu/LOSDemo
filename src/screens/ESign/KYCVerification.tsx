@@ -20,6 +20,9 @@ export const KYCVerification: React.FC<KYCVerificationProps> = ({
   const [kycNotes, setKycNotes] = useState(application.kyc_notes || '');
   const [processing, setProcessing] = useState(false);
   const [hasRunKYC, setHasRunKYC] = useState(!!application.kyc_status);
+  const [uploading, setUploading] = useState(false);
+  const [panUploaded, setPanUploaded] = useState(!!application.pan_uploaded);
+  const [aadhaarUploaded, setAadhaarUploaded] = useState(!!application.aadhaar_uploaded);
 
   // Check if application is already rejected for fraud
   const isFraudRejected = application.status === 'rejected' && application.rejection_reason?.includes('fraud');
@@ -27,12 +30,38 @@ export const KYCVerification: React.FC<KYCVerificationProps> = ({
   // Check if application is already rejected for poor bank statements
   const isBankRejected = application.status === 'rejected' && application.rejection_reason?.includes('bank statement');
 
-  // Auto-run KYC check on mount if not already done
+  // Auto-upload documents first, then run KYC
   useEffect(() => {
-    if (!hasRunKYC && !processing) {
+    if (!panUploaded && !aadhaarUploaded && !uploading) {
+      simulateDocumentUpload();
+    } else if (panUploaded && aadhaarUploaded && !hasRunKYC && !processing) {
       simulateKYCCheck();
     }
-  }, []);
+  }, [panUploaded, aadhaarUploaded]);
+
+  const simulateDocumentUpload = async () => {
+    setUploading(true);
+    try {
+      // Simulate PAN upload
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      setPanUploaded(true);
+
+      // Simulate Aadhaar upload
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      setAadhaarUploaded(true);
+
+      // Update application
+      await onUpdate({
+        pan_uploaded: true,
+        aadhaar_uploaded: true,
+        documents_uploaded_at: new Date().toISOString(),
+      });
+    } catch (error) {
+      console.error('Error during document upload simulation:', error);
+    } finally {
+      setUploading(false);
+    }
+  };
 
   // Update local state when application changes
   useEffect(() => {

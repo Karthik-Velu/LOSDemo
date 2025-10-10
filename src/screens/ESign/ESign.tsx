@@ -18,29 +18,23 @@ const workflowSteps = [
   {
     id: 2,
     key: 'otp_verification' as const,
-    title: "OTP Verification",
-    description: "Bureau & bank statement consent",
+    title: "Data Consent",
+    description: "Bureau & bank data access",
   },
   {
     id: 3,
-    key: 'document_upload' as const,
-    title: "Document Upload",
-    description: "PAN & Aadhaar verification",
+    key: 'kyc' as const,
+    title: "KYC & Fraud Check",
+    description: "Document upload & verification",
   },
   {
     id: 4,
-    key: 'kyc' as const,
-    title: "KYC Verification",
-    description: "Identity & fraud check",
+    key: 'credit_check' as const,
+    title: "Credit Assessment",
+    description: "Credit scoring & decision",
   },
   {
     id: 5,
-    key: 'credit_check' as const,
-    title: "Credit Check",
-    description: "Credit bureau & decision",
-  },
-  {
-    id: 6,
     key: 'disbursement' as const,
     title: "Disbursement",
     description: "Agreement & payment",
@@ -266,14 +260,6 @@ export const ESign = (): JSX.Element => {
           )}
           {currentStep.key === 'otp_verification' && (
             <OTPVerification
-              application={application}
-              onUpdate={updateApplication}
-              onNext={moveToNextStep}
-              onBack={moveToPreviousStep}
-            />
-          )}
-          {currentStep.key === 'document_upload' && (
-            <DocumentUpload
               application={application}
               onUpdate={updateApplication}
               onNext={moveToNextStep}
