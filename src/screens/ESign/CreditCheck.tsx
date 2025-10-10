@@ -99,7 +99,13 @@ export const CreditCheck: React.FC<CreditCheckProps> = ({
     console.log('Ki Score for scenario:', scenario, '=', kiScore);
     const requestedAmount = application.requested_amount || 50000;
     const eligibleAmount = requestedAmount * (kiScore > 50 ? 1.2 : 0.8);
-    const recommendedAmount = requestedAmount;
+    
+    // Adaptive tenure for climate scenario (longer tenure due to lower rainfall)
+    const isClimateScenario = scenario === 'climate_adaptive';
+    const adaptiveTerm = isClimateScenario ? 18 : 12; // 18 months for climate stress vs 12 normal
+    
+    // For climate scenario, recommended amount = eligible amount (no reduction)
+    const recommendedAmount = isClimateScenario ? eligibleAmount : requestedAmount;
 
     let creditDecision: 'approved' | 'rejected' | 'review' = 'review';
     if (kiScore <= 45) {
@@ -110,16 +116,12 @@ export const CreditCheck: React.FC<CreditCheckProps> = ({
       creditDecision = 'review'; // Fair - needs manual review
     }
 
-    // Adaptive tenure for climate scenario (longer tenure due to lower rainfall)
-    const isClimateScenario = scenario === 'climate_adaptive';
-    const adaptiveTerm = isClimateScenario ? 18 : 12; // 18 months for climate stress vs 12 normal
-
     const decisionData = {
       ki_score: kiScore,
       eligible_amount: eligibleAmount,
       recommended_amount: recommendedAmount,
       recommended_term: adaptiveTerm,
-      recommended_apr: isClimateScenario ? 24 : 28, // Lower APR for climate scenario as gesture of support
+      recommended_apr: 28, // Standard APR for all scenarios
       credit_decision: creditDecision,
       credit_checked_at: new Date().toISOString(),
       bureau_data: {
@@ -495,12 +497,13 @@ export const CreditCheck: React.FC<CreditCheckProps> = ({
                   </p>
                   <ul className="text-sm text-orange-800 space-y-1 ml-4">
                     <li>• <strong>Extended tenure to 18 months</strong> (vs standard 12 months) to accommodate reduced crop yields</li>
-                    <li>• <strong>Reduced APR to 24%</strong> (vs standard 28%) to support farmer during climate stress</li>
-                    <li>• <strong>Flexible repayment schedule</strong> aligned with harvest seasons considering rainfall patterns</li>
+                    <li>• <strong>Bullet repayment structure</strong> - Full principal due at end of 18-month period</li>
+                    <li>• <strong>Flexible early repayment</strong> - Borrower can repay anytime within 18 months without penalty</li>
+                    <li>• <strong>Harvest-aligned schedule</strong> - Repayment timing considers rainfall patterns and crop cycles</li>
                   </ul>
                   <p className="text-xs text-orange-700 mt-2 italic">
-                    Impact on borrower: Lower monthly payments (₹{Math.round((application.recommended_amount || 60000) / 18).toLocaleString('en-IN')} vs 
-                    ₹{Math.round((application.recommended_amount || 60000) / 12).toLocaleString('en-IN')}) to manage cash flow during challenging agricultural conditions.
+                    Impact on borrower: Bullet repayment provides cash flow flexibility during climate stress. Farmer can repay 
+                    when harvest is ready, rather than fixed monthly installments. Standard APR of 28% applies.
                   </p>
                 </div>
               </div>
