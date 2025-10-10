@@ -286,7 +286,7 @@ export const KYCVerification: React.FC<KYCVerificationProps> = ({
                     </div>
                   </div>
 
-                  <div className="bg-white p-5 rounded-lg border border-red-200 mb-4">
+                  <div className="bg-white p-5 rounded-lg border border-red-200">
                     {(() => {
                       try {
                         const parsed = JSON.parse(application.rejection_reason || '{}');
@@ -314,19 +314,6 @@ export const KYCVerification: React.FC<KYCVerificationProps> = ({
                         );
                       }
                     })()}
-                  </div>
-
-                  <div className="text-center">
-                    <p className="text-sm text-gray-600 mb-4">This application has been rejected and cannot proceed further.</p>
-                    <Button
-                      onClick={() => {
-                        localStorage.removeItem('mock_loan_applications');
-                        window.location.reload();
-                      }}
-                      className="px-8 py-3 text-base"
-                    >
-                      🏠 Start New Application
-                    </Button>
                   </div>
                 </div>
               )}
@@ -641,6 +628,24 @@ export const KYCVerification: React.FC<KYCVerificationProps> = ({
           >
             Continue to Credit Check
           </Button>
+        </div>
+      )}
+
+      {/* Show Start New Application button at bottom for fraud rejected cases */}
+      {isFraudRejected && (
+        <div className="mt-8 pt-6 border-t border-gray-200">
+          <div className="text-center">
+            <p className="text-sm text-gray-600 mb-4">This application has been rejected and cannot proceed further.</p>
+            <Button
+              onClick={() => {
+                localStorage.removeItem('mock_loan_applications');
+                window.location.reload();
+              }}
+              className="bg-[#11287c] hover:bg-[#1e3a8a] text-white px-8 py-3 text-base"
+            >
+              🏠 Start New Application
+            </Button>
+          </div>
         </div>
       )}
     </div>
