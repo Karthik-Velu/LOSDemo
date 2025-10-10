@@ -420,7 +420,7 @@ export const CreditCheck: React.FC<CreditCheckProps> = ({
         <div className="bg-white p-6 rounded-lg shadow-sm">
           <div className="flex items-center gap-2 mb-4">
             <img src={kiLogo} alt="Ki Score" className="h-5 w-auto" />
-            <h3 className="text-lg font-semibold text-gray-900">Ki Decision Summary</h3>
+            <h3 className="text-lg font-semibold text-gray-900">Ki Score Summary</h3>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="flex flex-col items-center">
