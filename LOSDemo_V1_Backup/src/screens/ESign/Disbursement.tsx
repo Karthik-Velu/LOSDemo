@@ -1,7 +1,6 @@
 import React, { useState } from "react";
 import { type LoanApplication } from "../../lib/supabase";
 import { Button } from "../../components/ui/button";
-import { StepNarration } from "../../components/StepNarration";
 
 interface DisbursementProps {
   application: LoanApplication;
@@ -90,13 +89,6 @@ export const Disbursement: React.FC<DisbursementProps> = ({
 
   return (
     <div>
-      <StepNarration
-        step={5}
-        title="Loan Disbursement"
-        description="After Kaleidofin returns the credit decision, the loan operations officer disburses the loan in a few simple steps. This includes account verification, agreement signing, and immediate fund transfer to the borrower's account."
-        icon="💰"
-        color="emerald"
-      />
       <div className="mb-8">
         <h2 className="text-3xl font-bold text-gray-900 mb-2">Disbursement</h2>
         <p className="text-base text-gray-600">Final verification and loan disbursement</p>

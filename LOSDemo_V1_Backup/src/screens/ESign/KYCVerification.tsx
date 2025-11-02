@@ -2,7 +2,6 @@ import React, { useState, useEffect } from "react";
 import kiLogo from "../../assets/ki-logo.svg";
 import { type LoanApplication } from "../../lib/supabase";
 import { Button } from "../../components/ui/button";
-import { StepNarration } from "../../components/StepNarration";
 
 interface KYCVerificationProps {
   application: LoanApplication;
@@ -24,9 +23,6 @@ export const KYCVerification: React.FC<KYCVerificationProps> = ({
   const [uploading, setUploading] = useState(false);
   const [panUploaded, setPanUploaded] = useState(!!application.pan_uploaded);
   const [aadhaarUploaded, setAadhaarUploaded] = useState(!!application.aadhaar_uploaded);
-  
-  // Get scenario from application
-  const scenario = (application as any).demo_scenario_id as string | undefined;
 
   // Check if application is already rejected for fraud
   // Check both JSON format and legacy text format
@@ -165,13 +161,6 @@ export const KYCVerification: React.FC<KYCVerificationProps> = ({
 
   return (
     <div>
-      <StepNarration
-        step={3}
-        title="KYC & Fraud Assessment"
-        description="Kaleidofin performs thorough KYC and fraud assessment to establish the borrower is genuine and there is no fraud risk. This includes document verification, identity matching, digital footprint analysis, and transaction pattern review."
-        icon="🛡️"
-        color="purple"
-      />
       <div className="mb-8">
         <h2 className="text-3xl font-bold text-gray-900 mb-2">KYC Verification</h2>
         <p className="text-base text-gray-600">Verify identity and assess fraud risk</p>
@@ -281,170 +270,6 @@ export const KYCVerification: React.FC<KYCVerificationProps> = ({
                   <span className={`px-4 py-2 rounded-full text-sm font-medium ${getRiskBadge(application.fraud_risk_level)}`}>
                     {application.fraud_risk_level?.toUpperCase()}
                   </span>
-                </div>
-              </div>
-
-              {/* Detailed Fraud Assessment Sections */}
-              <div className="mt-6 bg-gradient-to-br from-gray-50 to-white rounded-xl p-6 border-2 border-gray-200">
-                <h4 className="text-lg font-semibold text-gray-900 mb-4">Detailed Fraud Assessment</h4>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {/* Positive Factors */}
-                  <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                    <h5 className="text-sm font-semibold text-green-900 mb-3 flex items-center gap-2">
-                      <span className="text-lg">✓</span>
-                      Positive Factors
-                    </h5>
-                    <ul className="text-xs space-y-2">
-                      {fraudScore < 50 ? (
-                        <>
-                          <li className="text-green-800 flex items-start gap-2">
-                            <span className="text-green-600 mt-0.5">•</span>
-                            <span>Valid government-issued identity documents</span>
-                          </li>
-                          <li className="text-green-800 flex items-start gap-2">
-                            <span className="text-green-600 mt-0.5">•</span>
-                            <span>Stable residential address verified</span>
-                          </li>
-                          <li className="text-green-800 flex items-start gap-2">
-                            <span className="text-green-600 mt-0.5">•</span>
-                            <span>Consistent digital footprint (email, mobile)</span>
-                          </li>
-                          <li className="text-green-800 flex items-start gap-2">
-                            <span className="text-green-600 mt-0.5">•</span>
-                            <span>No adverse media reports found</span>
-                          </li>
-                          <li className="text-green-800 flex items-start gap-2">
-                            <span className="text-green-600 mt-0.5">•</span>
-                            <span>Identity matches across all data sources</span>
-                          </li>
-                        </>
-                      ) : (
-                        <>
-                          <li className="text-green-800 flex items-start gap-2">
-                            <span className="text-green-600 mt-0.5">•</span>
-                            <span>Documents submitted for verification</span>
-                          </li>
-                          <li className="text-green-800 flex items-start gap-2">
-                            <span className="text-green-600 mt-0.5">•</span>
-                            <span>Application details provided</span>
-                          </li>
-                        </>
-                      )}
-                    </ul>
-                  </div>
-
-                  {/* Areas to Watch */}
-                  <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                    <h5 className="text-sm font-semibold text-yellow-900 mb-3 flex items-center gap-2">
-                      <span className="text-lg">⚠️</span>
-                      Areas to Watch
-                    </h5>
-                    <ul className="text-xs space-y-2">
-                      {fraudScore < 50 ? (
-                        <>
-                          <li className="text-yellow-800 flex items-start gap-2">
-                            <span className="text-yellow-600 mt-0.5">•</span>
-                            <span>Limited digital transaction history</span>
-                          </li>
-                          {scenario === 'young_professional' && (
-                            <>
-                              <li className="text-yellow-800 flex items-start gap-2">
-                                <span className="text-yellow-600 mt-0.5">•</span>
-                                <span>Recent mobile number activation (6 months)</span>
-                              </li>
-                              <li className="text-yellow-800 flex items-start gap-2">
-                                <span className="text-yellow-600 mt-0.5">•</span>
-                                <span>First-time loan applicant</span>
-                              </li>
-                            </>
-                          )}
-                          {scenario === 'prime_customer' && (
-                            <>
-                              <li className="text-yellow-800 flex items-start gap-2">
-                                <span className="text-yellow-600 mt-0.5">•</span>
-                                <span>Multiple active loan accounts to monitor</span>
-                              </li>
-                            </>
-                          )}
-                          {scenario === 'climate_adaptive' && (
-                            <>
-                              <li className="text-yellow-800 flex items-start gap-2">
-                                <span className="text-yellow-600 mt-0.5">•</span>
-                                <span>Agricultural income subject to seasonal variation</span>
-                              </li>
-                            </>
-                          )}
-                        </>
-                      ) : (
-                        <>
-                          <li className="text-yellow-800 flex items-start gap-2">
-                            <span className="text-yellow-600 mt-0.5">•</span>
-                            <span>Very recent SIM tenure (2 months old)</span>
-                          </li>
-                          <li className="text-yellow-800 flex items-start gap-2">
-                            <span className="text-yellow-600 mt-0.5">•</span>
-                            <span>New email address (1 month old)</span>
-                          </li>
-                          <li className="text-yellow-800 flex items-start gap-2">
-                            <span className="text-yellow-600 mt-0.5">•</span>
-                            <span>Minimal online presence</span>
-                          </li>
-                        </>
-                      )}
-                    </ul>
-                  </div>
-
-                  {/* Key Risk Factors */}
-                  <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-                    <h5 className="text-sm font-semibold text-red-900 mb-3 flex items-center gap-2">
-                      <span className="text-lg">✕</span>
-                      Key Risk Factors
-                    </h5>
-                    <ul className="text-xs space-y-2">
-                      {fraudScore >= 70 ? (
-                        <>
-                          <li className="text-red-800 flex items-start gap-2">
-                            <span className="text-red-600 mt-0.5">•</span>
-                            <span>Multiple identity mismatches detected</span>
-                          </li>
-                          <li className="text-red-800 flex items-start gap-2">
-                            <span className="text-red-600 mt-0.5">•</span>
-                            <span>15 anomalous bank transactions flagged</span>
-                          </li>
-                          <li className="text-red-800 flex items-start gap-2">
-                            <span className="text-red-600 mt-0.5">•</span>
-                            <span>Address verification failed</span>
-                          </li>
-                          <li className="text-red-800 flex items-start gap-2">
-                            <span className="text-red-600 mt-0.5">•</span>
-                            <span>Suspicious transaction patterns</span>
-                          </li>
-                          <li className="text-red-800 flex items-start gap-2">
-                            <span className="text-red-600 mt-0.5">•</span>
-                            <span>Document inconsistencies found</span>
-                          </li>
-                        </>
-                      ) : fraudScore >= 50 ? (
-                        <>
-                          <li className="text-red-800 flex items-start gap-2">
-                            <span className="text-red-600 mt-0.5">•</span>
-                            <span>One minor identity mismatch</span>
-                          </li>
-                          <li className="text-red-800 flex items-start gap-2">
-                            <span className="text-red-600 mt-0.5">•</span>
-                            <span>Some transaction pattern irregularities</span>
-                          </li>
-                        </>
-                      ) : (
-                        <>
-                          <li className="text-red-800 flex items-start gap-2">
-                            <span className="text-red-600 mt-0.5">•</span>
-                            <span>No significant risk factors detected</span>
-                          </li>
-                        </>
-                      )}
-                    </ul>
-                  </div>
                 </div>
               </div>
 

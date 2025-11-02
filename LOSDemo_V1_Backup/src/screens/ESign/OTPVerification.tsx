@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { type LoanApplication } from "../../lib/supabase";
 import { Button } from "../../components/ui/button";
-import { StepNarration } from "../../components/StepNarration";
 
 interface OTPVerificationProps {
   application: LoanApplication;
@@ -71,13 +70,6 @@ export const OTPVerification: React.FC<OTPVerificationProps> = ({
 
   return (
     <div>
-      <StepNarration
-        step={2}
-        title="Borrower Consent"
-        description="The borrower provides consent to pull their bank statement data and credit bureau data through OTP received at their registered phone number. This ensures data privacy and compliance with regulations."
-        icon="🔐"
-        color="green"
-      />
       <div className="mb-6">
         <h2 className="text-2xl font-bold text-gray-900">Data Access Consent</h2>
         <p className="text-sm text-gray-600 mt-1">Verify consent to pull credit bureau and bank statement data</p>

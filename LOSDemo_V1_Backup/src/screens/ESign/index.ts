@@ -1,3 +1,2 @@
 export { ESign } from "./ESign";
-export { IntroScreen } from "./IntroScreen";
 export { DocumentUpload } from "./DocumentUpload";

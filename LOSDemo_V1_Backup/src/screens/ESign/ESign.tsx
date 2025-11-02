@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from "react";
 import kiOriginateLogo from "../../assets/ki-originate-logo.svg";
 import { supabase, type LoanApplication } from "../../lib/supabase";
-import { IntroScreen } from "./IntroScreen";
 import { LeadRegistration } from "./LeadRegistration";
 import { OTPVerification } from "./OTPVerification";
 import { DocumentUpload } from "./DocumentUpload";
@@ -10,12 +9,6 @@ import { CreditCheck } from "./CreditCheck";
 import { Disbursement } from "./Disbursement";
 
 const workflowSteps = [
-  {
-    id: 0,
-    key: 'intro' as const,
-    title: "Welcome",
-    description: "Demo introduction",
-  },
   {
     id: 1,
     key: 'lead_registration' as const,
@@ -265,9 +258,6 @@ export const ESign = (): JSX.Element => {
         </div>
 
         <div className="bg-gray-50 rounded-lg p-6 min-h-[400px]">
-          {currentStep.key === 'intro' && (
-            <IntroScreen onNext={moveToNextStep} />
-          )}
           {currentStep.key === 'lead_registration' && (
             <LeadRegistration
               application={application}

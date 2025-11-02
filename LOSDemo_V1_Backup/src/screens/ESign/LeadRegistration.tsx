@@ -1,7 +1,6 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { type LoanApplication } from "../../lib/supabase";
 import { Button } from "../../components/ui/button";
-import { StepNarration } from "../../components/StepNarration";
 
 interface LeadRegistrationProps {
   application: LoanApplication;
@@ -30,6 +29,16 @@ export const LeadRegistration: React.FC<LeadRegistrationProps> = ({
     requested_amount: application.requested_amount || '',
   });
   
+  // Check if a scenario was selected before reload
+  useEffect(() => {
+    const selectedScenario = sessionStorage.getItem('selected_scenario');
+    if (selectedScenario) {
+      const scenario = JSON.parse(selectedScenario);
+      console.log('Auto-loading scenario after reload:', scenario.id);
+      setFormData({ ...scenario.data, demo_scenario_id: scenario.id } as any);
+      sessionStorage.removeItem('selected_scenario'); // Clear it so it doesn't happen again
+    }
+  }, []);
 
   const [showHighRiskQuestionnaire, setShowHighRiskQuestionnaire] = useState(false);
   const [highRiskAnswers, setHighRiskAnswers] = useState({
@@ -48,72 +57,72 @@ export const LeadRegistration: React.FC<LeadRegistrationProps> = ({
 
   const demoScenarios = [
     {
-      id: 'young_professional',
-      title: 'Young Professional',
-      description: 'New to credit, limited history',
-      color: 'blue',
+      id: 'high_risk',
+      title: 'High Fraud Risk Case',
+      description: 'Requires additional verification',
+      color: 'red',
       data: {
-        applicant_name: 'Kiran Desai',
-        applicant_phone: '+91 98765 43220',
-        applicant_email: 'kiran.desai@email.com',
-        applicant_address: 'Village Shivpur, Post Office Shivpur, Tehsil Azamgarh, District Azamgarh, Uttar Pradesh - 276001',
-        applicant_pan: 'FGHIJ4567P',
-        applicant_aadhaar: '9012 3456 7890',
-        coapplicant_name: 'Ritu Desai',
-        coapplicant_phone: '+91 98765 43221',
-        coapplicant_email: 'ritu.desai@email.com',
-        coapplicant_address: 'Village Shivpur, Post Office Shivpur, Tehsil Azamgarh, District Azamgarh, Uttar Pradesh - 276001',
-        coapplicant_pan: 'KLMNO8901Q',
-        coapplicant_aadhaar: '9876 5432 1098',
-        requested_amount: '45000',
+        applicant_name: 'Amit Kumar',
+        applicant_phone: '+91 98765 43210',
+        applicant_email: 'amit.kumar@email.com',
+        applicant_address: 'Village Rampur, Post Office Rampur, Tehsil Bijnor, District Bijnor, Uttar Pradesh - 246701',
+        applicant_pan: 'XYZAB1234C',
+        applicant_aadhaar: '5678 9012 3456',
+        coapplicant_name: 'Sunita Kumar',
+        coapplicant_phone: '+91 98765 43211',
+        coapplicant_email: 'sunita.kumar@email.com',
+        coapplicant_address: 'Village Rampur, Post Office Rampur, Tehsil Bijnor, District Bijnor, Uttar Pradesh - 246701',
+        coapplicant_pan: 'PQRST5678D',
+        coapplicant_aadhaar: '4321 0987 6543',
+        requested_amount: '75000',
       }
     },
     {
-      id: 'climate_adaptive',
-      title: 'Climate Adaptive',
-      description: 'Farmer with climate risk, adaptive terms',
-      color: 'orange',
-      data: {
-        applicant_name: 'Suresh Yadav',
-        applicant_phone: '+91 98765 43230',
-        applicant_email: 'suresh.yadav@email.com',
-        applicant_address: 'Village Mahrajganj, Post Office Mahrajganj, Tehsil Gola, District Gorakhpur, Uttar Pradesh - 273001',
-        applicant_pan: 'STUV3456W',
-        applicant_aadhaar: '2468 1357 9024',
-        coapplicant_name: 'Sangeeta Yadav',
-        coapplicant_phone: '+91 98765 43231',
-        coapplicant_email: 'sangeeta.yadav@email.com',
-        coapplicant_address: 'Village Mahrajganj, Post Office Mahrajganj, Tehsil Gola, District Gorakhpur, Uttar Pradesh - 273001',
-        coapplicant_pan: 'WXYZ7890X',
-        coapplicant_aadhaar: '1357 2468 0135',
-        requested_amount: '60000',
-      }
-    },
-    {
-      id: 'prime_customer',
-      title: 'Low Risk Customer',
-      description: 'Excellent credit profile with strong history',
+      id: 'low_risk_traditional',
+      title: 'Low Risk - Traditional Data',
+      description: 'Strong bureau & bank data',
       color: 'green',
       data: {
-        applicant_name: 'Arun Kumar',
-        applicant_phone: '+91 98765 43218',
-        applicant_email: 'arun.kumar@email.com',
-        applicant_address: 'Village Rasulpur, Post Office Rasulpur, Tehsil Bijnor, District Bijnor, Uttar Pradesh - 246701',
-        applicant_pan: 'VWXYZ7890N',
-        applicant_aadhaar: '8901 2345 6789',
-        coapplicant_name: 'Meera Kumar',
-        coapplicant_phone: '+91 98765 43219',
-        coapplicant_email: 'meera.kumar@email.com',
-        coapplicant_address: 'Village Rasulpur, Post Office Rasulpur, Tehsil Bijnor, District Bijnor, Uttar Pradesh - 246701',
-        coapplicant_pan: 'ABCDE1234O',
-        coapplicant_aadhaar: '8765 4321 0987',
-        requested_amount: '80000',
+        applicant_name: 'Rajesh Kumar Sharma',
+        applicant_phone: '+91 98765 43210',
+        applicant_email: 'rajesh.sharma@email.com',
+        applicant_address: 'Village Devgaon, Post Office Devgaon, Tehsil Sadar, District Azamgarh, Uttar Pradesh - 276001',
+        applicant_pan: 'ABCDE1234F',
+        applicant_aadhaar: '1234 5678 9012',
+        coapplicant_name: 'Priya Sharma',
+        coapplicant_phone: '+91 98765 43211',
+        coapplicant_email: 'priya.sharma@email.com',
+        coapplicant_address: 'Village Devgaon, Post Office Devgaon, Tehsil Sadar, District Azamgarh, Uttar Pradesh - 276001',
+        coapplicant_pan: 'BCDEF5678G',
+        coapplicant_aadhaar: '9876 5432 1098',
+        requested_amount: '50000',
+      }
+    },
+    {
+      id: 'thin_file',
+      title: 'Thin File - Alternate Data',
+      description: 'Limited traditional data',
+      color: 'blue',
+      data: {
+        applicant_name: 'Vikram Singh',
+        applicant_phone: '+91 98765 43212',
+        applicant_email: 'vikram.singh@email.com',
+        applicant_address: 'Village Madhupur, Post Office Madhupur, Tehsil Ghazipur, District Ghazipur, Uttar Pradesh - 233001',
+        applicant_pan: 'GHIJK5678H',
+        applicant_aadhaar: '3456 7890 1234',
+        coapplicant_name: 'Anjali Singh',
+        coapplicant_phone: '+91 98765 43213',
+        coapplicant_email: 'anjali.singh@email.com',
+        coapplicant_address: 'Village Madhupur, Post Office Madhupur, Tehsil Ghazipur, District Ghazipur, Uttar Pradesh - 233001',
+        coapplicant_pan: 'MNOPQ9012I',
+        coapplicant_aadhaar: '2109 8765 4321',
+        requested_amount: '35000',
       }
     },
     {
       id: 'fraud_rejection',
-      title: 'Fraud Rejection',
-      description: 'High fraud risk, rejected at KYC',
+      title: 'Fraud Rejection Case',
+      description: 'Rejected at KYC - high fraud risk',
       color: 'red',
       data: {
         applicant_name: 'Ravi Patel',
@@ -133,9 +142,9 @@ export const LeadRegistration: React.FC<LeadRegistrationProps> = ({
     },
     {
       id: 'bank_rejection',
-      title: 'Credit Rejection',
-      description: 'Poor cash flow, rejected at credit assessment',
-      color: 'red',
+      title: 'Poor Bank Statement Case',
+      description: 'Irregular transactions',
+      color: 'orange',
       data: {
         applicant_name: 'Suresh Reddy',
         applicant_phone: '+91 98765 43216',
@@ -151,14 +160,79 @@ export const LeadRegistration: React.FC<LeadRegistrationProps> = ({
         coapplicant_aadhaar: '7654 3210 9876',
         requested_amount: '60000',
       }
+    },
+    {
+      id: 'prime_customer',
+      title: 'Prime Customer',
+      description: 'Excellent profile',
+      color: 'green',
+      data: {
+        applicant_name: 'Arun Kumar',
+        applicant_phone: '+91 98765 43218',
+        applicant_email: 'arun.kumar@email.com',
+        applicant_address: 'Village Rasulpur, Post Office Rasulpur, Tehsil Bijnor, District Bijnor, Uttar Pradesh - 246701',
+        applicant_pan: 'VWXYZ7890N',
+        applicant_aadhaar: '8901 2345 6789',
+        coapplicant_name: 'Meera Kumar',
+        coapplicant_phone: '+91 98765 43219',
+        coapplicant_email: 'meera.kumar@email.com',
+        coapplicant_address: 'Village Rasulpur, Post Office Rasulpur, Tehsil Bijnor, District Bijnor, Uttar Pradesh - 246701',
+        coapplicant_pan: 'ABCDE1234O',
+        coapplicant_aadhaar: '8765 4321 0987',
+        requested_amount: '80000',
+      }
+    },
+    {
+      id: 'young_professional',
+      title: 'Young Professional',
+      description: 'New to credit',
+      color: 'blue',
+      data: {
+        applicant_name: 'Kiran Desai',
+        applicant_phone: '+91 98765 43220',
+        applicant_email: 'kiran.desai@email.com',
+        applicant_address: 'Village Shivpur, Post Office Shivpur, Tehsil Azamgarh, District Azamgarh, Uttar Pradesh - 276001',
+        applicant_pan: 'FGHIJ4567P',
+        applicant_aadhaar: '9012 3456 7890',
+        coapplicant_name: 'Ritu Desai',
+        coapplicant_phone: '+91 98765 43221',
+        coapplicant_email: 'ritu.desai@email.com',
+        coapplicant_address: 'Village Shivpur, Post Office Shivpur, Tehsil Azamgarh, District Azamgarh, Uttar Pradesh - 276001',
+        coapplicant_pan: 'KLMNO8901Q',
+        coapplicant_aadhaar: '9876 5432 1098',
+        requested_amount: '45000',
+      }
+    },
+    {
+      id: 'climate_adaptive',
+      title: 'Climate Risk - Adaptive Repayment',
+      description: 'Agriculture with climate stress',
+      color: 'orange',
+      data: {
+        applicant_name: 'Suresh Yadav',
+        applicant_phone: '+91 98765 43230',
+        applicant_email: 'suresh.yadav@email.com',
+        applicant_address: 'Village Mahrajganj, Post Office Mahrajganj, Tehsil Gola, District Gorakhpur, Uttar Pradesh - 273001',
+        applicant_pan: 'STUV3456W',
+        applicant_aadhaar: '2468 1357 9024',
+        coapplicant_name: 'Sangeeta Yadav',
+        coapplicant_phone: '+91 98765 43231',
+        coapplicant_email: 'sangeeta.yadav@email.com',
+        coapplicant_address: 'Village Mahrajganj, Post Office Mahrajganj, Tehsil Gola, District Gorakhpur, Uttar Pradesh - 273001',
+        coapplicant_pan: 'WXYZ7890X',
+        coapplicant_aadhaar: '1357 2468 0135',
+        requested_amount: '60000',
+      }
     }
   ];
 
   const handleScenarioSelect = (scenario: typeof demoScenarios[0]) => {
     console.log('Scenario selected:', scenario.id);
-    // Simply update the form data with the scenario instead of reloading
-    setFormData({ ...scenario.data, demo_scenario_id: scenario.id } as any);
-    (document.getElementById('scenario-modal') as HTMLDialogElement)?.close();
+    // Clear localStorage and reload to start fresh with new scenario
+    localStorage.removeItem('mock_loan_applications');
+    // Set the scenario in sessionStorage so we can pick it up after reload
+    sessionStorage.setItem('selected_scenario', JSON.stringify(scenario));
+    window.location.reload();
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -183,13 +257,6 @@ export const LeadRegistration: React.FC<LeadRegistrationProps> = ({
 
   return (
     <div>
-      <StepNarration
-        step={1}
-        title="Loan Application Entry"
-        description="The loan officer fills in the loan application details through the loan origination system of the financial institution. This includes borrower information, co-applicant details, and the requested loan amount."
-        icon="📝"
-        color="blue"
-      />
       <div className="mb-6">
         <div className="flex items-center justify-between">
           <div>

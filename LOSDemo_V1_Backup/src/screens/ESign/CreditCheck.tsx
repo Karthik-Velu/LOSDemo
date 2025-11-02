@@ -2,7 +2,6 @@ import React, { useState, useEffect } from "react";
 import kiLogo from "../../assets/ki-logo.svg";
 import { type LoanApplication } from "../../lib/supabase";
 import { Button } from "../../components/ui/button";
-import { StepNarration } from "../../components/StepNarration";
 
 interface CreditCheckProps {
   application: LoanApplication;
@@ -21,43 +20,6 @@ export const CreditCheck: React.FC<CreditCheckProps> = ({
   const [newDecision, setNewDecision] = useState<'approved' | 'rejected' | null>(null);
   const [reviewerComments, setReviewerComments] = useState(application.reviewer_comments || '');
   const [hasRunCreditCheck, setHasRunCreditCheck] = useState(!!application.credit_decision);
-  
-  // Get scenario from application
-  const scenario = (application as any).demo_scenario_id as string | undefined;
-  
-  // Interactive slider state
-  const [selectedLoanAmount, setSelectedLoanAmount] = useState<number>(application.eligible_amount || 0);
-  const [dynamicAPR, setDynamicAPR] = useState<number>(application.recommended_apr || 18);
-  const [dynamicTerm, setDynamicTerm] = useState<number>(application.recommended_term || 12);
-  
-  // Initialize slider when credit check completes
-  useEffect(() => {
-    if (application.eligible_amount && !selectedLoanAmount) {
-      setSelectedLoanAmount(application.eligible_amount);
-    }
-    if (application.recommended_apr) {
-      setDynamicAPR(application.recommended_apr);
-    }
-    if (application.recommended_term) {
-      setDynamicTerm(application.recommended_term);
-    }
-  }, [application.eligible_amount, application.recommended_apr, application.recommended_term]);
-  
-  // Update APR and Term based on slider value
-  const handleSliderChange = (value: number) => {
-    setSelectedLoanAmount(value);
-    const maxEligible = application.eligible_amount || value;
-    // Formula: APR = 16 + (5 * ((currentValue / maxEligible)))
-    // Lower amount = lower risk = lower APR (16%)
-    // Higher amount = higher risk = higher APR (21%)
-    const newAPR = 16 + (5 * (value / maxEligible));
-    setDynamicAPR(Math.round(newAPR * 10) / 10); // Round to 1 decimal
-    
-    // Adjust term slightly based on amount (larger loans get longer terms)
-    const baseTerm = application.recommended_term || 12;
-    const termAdjustment = Math.floor((value / maxEligible) * 6); // 0-6 months extra
-    setDynamicTerm(Math.min(baseTerm + termAdjustment, 18));
-  };
 
   // Check if application is already rejected for poor bank statements
   const isBankRejected = application.status === 'rejected' && application.rejection_reason?.includes('bank statement');
@@ -136,20 +98,14 @@ export const CreditCheck: React.FC<CreditCheckProps> = ({
     
     console.log('Ki Score for scenario:', scenario, '=', kiScore);
     const requestedAmount = application.requested_amount || 50000;
-    // Prime customer should get MORE than requested (excellent profile)
-    let eligibleAmount: number;
-    if (scenario === 'prime_customer') {
-      eligibleAmount = requestedAmount * 1.2; // 20% more than requested for low-risk customer
-    } else {
-      eligibleAmount = requestedAmount * (kiScore > 50 ? 0.8 : 1.0);
-    }
+    const eligibleAmount = requestedAmount * (kiScore > 50 ? 1.2 : 0.8);
     
     // Adaptive tenure for climate scenario (longer tenure due to lower rainfall)
     const isClimateScenario = scenario === 'climate_adaptive';
     const adaptiveTerm = isClimateScenario ? 18 : 12; // 18 months for climate stress vs 12 normal
     
-    // Recommended amount is always the eligible amount (approved amount based on assessment)
-    const recommendedAmount = eligibleAmount;
+    // For climate scenario, recommended amount = eligible amount (no reduction)
+    const recommendedAmount = isClimateScenario ? eligibleAmount : requestedAmount;
 
     let creditDecision: 'approved' | 'rejected' | 'review' = 'review';
     if (kiScore <= 45) {
@@ -160,80 +116,15 @@ export const CreditCheck: React.FC<CreditCheckProps> = ({
       creditDecision = 'review'; // Fair - needs manual review
     }
 
-    // Calculate APR based on Ki Score (16-21% range)
-    // Better scores (lower Ki Score) get better rates
-    let calculatedAPR = 18; // Base APR
-    if (kiScore <= 25) {
-      calculatedAPR = 16; // Excellent - best rate
-    } else if (kiScore <= 45) {
-      calculatedAPR = 17; // Good
-    } else if (kiScore <= 60) {
-      calculatedAPR = 19; // Fair
-    } else {
-      calculatedAPR = 21; // Poor - highest rate
-    }
-
-    // Scenario-specific bureau data
-    let bureauData: any;
-    if (scenario === 'young_professional') {
-      // First-time applicant - NO existing loans
-      bureauData = {
-        credit_history_length: '0 years',
-        active_accounts: 0,
-        inquiries_180d: 1,
-        worst_dpd_12m: 'N/A',
-        credit_utilization: '0%',
-        on_time_payment_rate: 'N/A',
-        secured_loans: 0,
-        unsecured_loans: 0,
-        total_balance: 0,
-        oldest_account: 'None',
-      };
-    } else if (scenario === 'prime_customer') {
-      // Excellent credit history
-      bureauData = {
-        credit_history_length: '5+ years',
-        active_accounts: 3,
-        inquiries_180d: 2,
-        worst_dpd_12m: 'Never',
-        credit_utilization: '45%',
-        on_time_payment_rate: '100%',
-        secured_loans: 1,
-        unsecured_loans: 2,
-        total_balance: 180000,
-        oldest_account: '6 years',
-      };
-    } else if (scenario === 'bank_rejection') {
-      // Poor credit, existing loans
-      bureauData = {
-        credit_history_length: '2 years',
-        active_accounts: 5,
-        inquiries_180d: 12,
-        worst_dpd_12m: '60-90 DPD',
-        credit_utilization: '92%',
-        on_time_payment_rate: '68%',
-        secured_loans: 2,
-        unsecured_loans: 3,
-        total_balance: 245000,
-        oldest_account: '24 months',
-      };
-    } else if (scenario === 'climate_adaptive') {
-      // Moderate history, agricultural focus
-      bureauData = {
-        credit_history_length: '3 years',
-        active_accounts: 2,
-        inquiries_180d: 3,
-        worst_dpd_12m: '1-30 DPD',
-        credit_utilization: '58%',
-        on_time_payment_rate: '88%',
-        secured_loans: 1,
-        unsecured_loans: 1,
-        total_balance: 95000,
-        oldest_account: '36 months',
-      };
-    } else {
-      // Default/other scenarios
-      bureauData = {
+    const decisionData = {
+      ki_score: kiScore,
+      eligible_amount: eligibleAmount,
+      recommended_amount: recommendedAmount,
+      recommended_term: adaptiveTerm,
+      recommended_apr: 28, // Standard APR for all scenarios
+      credit_decision: creditDecision,
+      credit_checked_at: new Date().toISOString(),
+      bureau_data: {
         credit_history_length: '1.5 years',
         active_accounts: 4,
         inquiries_180d: 6,
@@ -244,18 +135,7 @@ export const CreditCheck: React.FC<CreditCheckProps> = ({
         unsecured_loans: 1,
         total_balance: 125000,
         oldest_account: '18 months',
-      };
-    }
-
-    const decisionData = {
-      ki_score: kiScore,
-      eligible_amount: eligibleAmount,
-      recommended_amount: recommendedAmount,
-      recommended_term: adaptiveTerm,
-      recommended_apr: calculatedAPR,
-      credit_decision: creditDecision,
-      credit_checked_at: new Date().toISOString(),
-      bureau_data: bureauData,
+      },
       alternate_data: {
         socioeconomic: {
           schools_nearby: 8,
@@ -292,27 +172,6 @@ export const CreditCheck: React.FC<CreditCheckProps> = ({
             inflows: { agri: 12000, dairy: 2000 },
             outflows: { emi: 9500, utilities: 8200, other: 15000 },
             insights: { avg_balance: 1500, dti: '68%', stability: 'Very Low' },
-          }
-        : scenario === 'young_professional'
-        ? {
-            status: 'Good',
-            inflows: { salary: 32000, other: 3000 },
-            outflows: { emi: 0, utilities: 4500, other: 12000 }, // NO EMI - first-time applicant
-            insights: { avg_balance: 18000, dti: '0%', stability: 'Good' },
-          }
-        : scenario === 'prime_customer'
-        ? {
-            status: 'V Good',
-            inflows: { business: 85000, salary: 45000 },
-            outflows: { emi: 22000, utilities: 8500, other: 28000 },
-            insights: { avg_balance: 95000, dti: '16.9%', stability: 'Very High' },
-          }
-        : scenario === 'climate_adaptive'
-        ? {
-            status: 'Good',
-            inflows: { agri: 42000, dairy: 12000 },
-            outflows: { emi: 8500, utilities: 5200, other: 14000 },
-            insights: { avg_balance: 24000, dti: '15.7%', stability: 'Moderate' },
           }
         : {
             status: 'V Good',
@@ -543,13 +402,6 @@ export const CreditCheck: React.FC<CreditCheckProps> = ({
 
   return (
     <div>
-      <StepNarration
-        step={4}
-        title="Credit Assessment"
-        description="Once the borrower is verified as genuine, Kaleidofin conducts comprehensive credit assessment to establish the borrower's capacity to repay. The decision is made using credit bureau data, bank statements, loan application details, and our internal alternative data database. This holistic approach ensures fair and accurate credit decisions."
-        icon="📊"
-        color="indigo"
-      />
       <div className="flex items-center justify-between mb-8">
         <div>
           <h2 className="text-3xl font-bold text-gray-900 mb-2">Credit Assessment</h2>
@@ -605,58 +457,29 @@ export const CreditCheck: React.FC<CreditCheckProps> = ({
               <p className="text-sm text-gray-600 mt-2 font-medium">Ki Score (1-100, lower is better)</p>
             </div>
 
-            <div className="space-y-4 w-full">
+            <div className="space-y-3 w-full">
               <div>
                 <p className="text-sm text-gray-600">Requested Amount:</p>
                 <p className="text-lg font-semibold text-gray-900">₹{application.requested_amount?.toLocaleString('en-IN')}</p>
               </div>
               <div>
                 <p className="text-sm text-gray-600">Eligible Amount:</p>
-                <p className="text-2xl font-bold text-green-600">₹{application.eligible_amount?.toLocaleString('en-IN')}</p>
-                <p className="text-xs text-gray-500 mt-1 italic">
-                  Based on bank statement analysis, disposable income, and credit score
-                </p>
+                <p className="text-lg font-semibold text-gray-900">₹{application.eligible_amount?.toLocaleString('en-IN')}</p>
               </div>
-              
-              {/* Interactive Loan Amount Slider */}
-              <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
-                <div className="mb-3">
-                  <label className="text-sm font-semibold text-gray-900 flex items-center justify-between">
-                    <span>Adjust Loan Amount:</span>
-                    <span className="text-lg text-[#11287c]">₹{selectedLoanAmount?.toLocaleString('en-IN')}</span>
-                  </label>
-                </div>
-                <input
-                  type="range"
-                  min="5000"
-                  max={application.eligible_amount || 100000}
-                  step="1000"
-                  value={selectedLoanAmount}
-                  onChange={(e) => handleSliderChange(Number(e.target.value))}
-                  className="w-full h-2 bg-blue-200 rounded-lg appearance-none cursor-pointer accent-[#11287c]"
-                  style={{
-                    background: `linear-gradient(to right, #11287c 0%, #11287c ${((selectedLoanAmount - 5000) / ((application.eligible_amount || 100000) - 5000)) * 100}%, #dbeafe ${((selectedLoanAmount - 5000) / ((application.eligible_amount || 100000) - 5000)) * 100}%, #dbeafe 100%)`
-                  }}
-                />
-                <div className="flex justify-between text-xs text-gray-600 mt-1">
-                  <span>₹5,000</span>
-                  <span>₹{application.eligible_amount?.toLocaleString('en-IN')}</span>
-                </div>
+              <div>
+                <p className="text-sm text-gray-600">Recommended Amount:</p>
+                <p className="text-lg font-semibold text-[#11287c]">₹{application.recommended_amount?.toLocaleString('en-IN')}</p>
               </div>
-
               <div className="flex gap-4">
-                <div className="flex-1">
+                <div>
                   <p className="text-sm text-gray-600">Term:</p>
-                  <p className="text-base font-semibold text-gray-900">{dynamicTerm} Months</p>
+                  <p className="text-base font-semibold text-gray-900">{application.recommended_term} Months</p>
                 </div>
-                <div className="flex-1">
+                <div>
                   <p className="text-sm text-gray-600">APR:</p>
-                  <p className="text-base font-semibold text-gray-900">{dynamicAPR}%</p>
+                  <p className="text-base font-semibold text-gray-900">{application.recommended_apr}%</p>
                 </div>
               </div>
-              <p className="text-xs text-gray-500 italic">
-                💡 Move the slider to see how loan amount affects APR and term
-              </p>
             </div>
           </div>
 
@@ -680,7 +503,7 @@ export const CreditCheck: React.FC<CreditCheckProps> = ({
                   </ul>
                   <p className="text-xs text-orange-700 mt-2 italic">
                     Impact on borrower: Bullet repayment provides cash flow flexibility during climate stress. Farmer can repay 
-                    when harvest is ready, rather than fixed monthly installments. Competitive APR based on profile applies.
+                    when harvest is ready, rather than fixed monthly installments. Standard APR of 28% applies.
                   </p>
                 </div>
               </div>
@@ -689,10 +512,10 @@ export const CreditCheck: React.FC<CreditCheckProps> = ({
         </div>
 
         <div className="bg-white p-6 rounded-lg shadow-sm">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Reasons for this Decision</h3>
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">Model Explainability</h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-              <h4 className="text-sm font-semibold text-green-900 mb-2">Positive Factors</h4>
+              <h4 className="text-sm font-semibold text-green-900 mb-2">What's Good</h4>
               <ul className="text-xs space-y-1">
                 {decision?.whats_good?.map((item: string, i: number) => (
                   <li key={i} className="text-green-800">• {item}</li>
@@ -700,7 +523,7 @@ export const CreditCheck: React.FC<CreditCheckProps> = ({
               </ul>
             </div>
             <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-              <h4 className="text-sm font-semibold text-yellow-900 mb-2">Areas to Watch</h4>
+              <h4 className="text-sm font-semibold text-yellow-900 mb-2">Needs Improvement</h4>
               <ul className="text-xs space-y-1">
                 {decision?.needs_improvement?.map((item: string, i: number) => (
                   <li key={i} className="text-yellow-800">• {item}</li>
@@ -708,7 +531,7 @@ export const CreditCheck: React.FC<CreditCheckProps> = ({
               </ul>
             </div>
             <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-              <h4 className="text-sm font-semibold text-red-900 mb-2">Risk Factors</h4>
+              <h4 className="text-sm font-semibold text-red-900 mb-2">What's Bad</h4>
               <ul className="text-xs space-y-1">
                 {decision?.whats_bad?.map((item: string, i: number) => (
                   <li key={i} className="text-red-800">• {item}</li>
@@ -719,130 +542,11 @@ export const CreditCheck: React.FC<CreditCheckProps> = ({
         </div>
 
         <div className="bg-white p-6 rounded-lg shadow-sm">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">Bureau Details</h3>
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-gray-900">Bureau Details</h3>
-            <span className={`px-4 py-2 rounded-full text-sm font-semibold ${
-              kiScore <= 35 ? 'bg-green-100 text-green-800 border-2 border-green-300' :
-              kiScore <= 55 ? 'bg-yellow-100 text-yellow-800 border-2 border-yellow-300' :
-              'bg-orange-100 text-orange-800 border-2 border-orange-300'
-            }`}>
-              {kiScore <= 35 ? '✓ Positive' : kiScore <= 55 ? '⚠️ Neutral' : '⚠️ Needs Review'}
-            </span>
+            <div></div>
+            <span className="px-3 py-1 bg-yellow-100 text-yellow-800 text-xs font-medium rounded">Average</span>
           </div>
-          <div className="mb-4 p-3 bg-blue-50 border-l-4 border-blue-500 rounded">
-            <p className="text-sm font-semibold text-blue-900">
-              Overall Verdict: {kiScore <= 35 ? 'Strong credit profile with good payment history' : kiScore <= 55 ? 'Average credit profile with some areas to improve' : 'Credit profile shows signs of stress'}
-            </p>
-          </div>
-          
-          {/* Bureau Assessment Factors */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-            <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-              <h4 className="text-sm font-semibold text-green-900 mb-2">Positive Factors</h4>
-              <ul className="text-xs space-y-1">
-                {scenario === 'young_professional' && (
-                  <>
-                    <li className="text-green-800">• Clean credit record - no defaults</li>
-                    <li className="text-green-800">• Only 1 credit inquiry (low credit shopping)</li>
-                    <li className="text-green-800">• No existing debt burden</li>
-                  </>
-                )}
-                {scenario === 'prime_customer' && (
-                  <>
-                    <li className="text-green-800">• Excellent 5+ year credit history</li>
-                    <li className="text-green-800">• 100% on-time payment record</li>
-                    <li className="text-green-800">• Low credit utilization (45%)</li>
-                    <li className="text-green-800">• Mix of secured and unsecured credit</li>
-                  </>
-                )}
-                {scenario === 'climate_adaptive' && (
-                  <>
-                    <li className="text-green-800">• Established 3-year credit history</li>
-                    <li className="text-green-800">• 88% on-time payment rate</li>
-                    <li className="text-green-800">• Moderate credit utilization (58%)</li>
-                  </>
-                )}
-                {scenario === 'bank_rejection' && (
-                  <>
-                    <li className="text-green-800">• Has 2-year credit history</li>
-                  </>
-                )}
-                {!scenario && (
-                  <>
-                    <li className="text-green-800">• Good credit history length</li>
-                    <li className="text-green-800">• High on-time payment rate</li>
-                  </>
-                )}
-              </ul>
-            </div>
-            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-              <h4 className="text-sm font-semibold text-yellow-900 mb-2">Areas to Watch</h4>
-              <ul className="text-xs space-y-1">
-                {scenario === 'young_professional' && (
-                  <>
-                    <li className="text-yellow-800">• No credit history (first-time borrower)</li>
-                    <li className="text-yellow-800">• No payment history to assess</li>
-                  </>
-                )}
-                {scenario === 'prime_customer' && (
-                  <>
-                    <li className="text-yellow-800">• Total debt of ₹1.8L to monitor</li>
-                  </>
-                )}
-                {scenario === 'climate_adaptive' && (
-                  <>
-                    <li className="text-yellow-800">• One 1-30 DPD incident (12 months ago)</li>
-                    <li className="text-yellow-800">• 3 credit inquiries in 6 months</li>
-                  </>
-                )}
-                {scenario === 'bank_rejection' && (
-                  <>
-                    <li className="text-yellow-800">• High credit utilization (92%)</li>
-                    <li className="text-yellow-800">• 12 credit inquiries (credit hungry)</li>
-                  </>
-                )}
-                {!scenario && (
-                  <>
-                    <li className="text-yellow-800">• Multiple recent credit inquiries</li>
-                  </>
-                )}
-              </ul>
-            </div>
-            <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-              <h4 className="text-sm font-semibold text-red-900 mb-2">Risk Factors</h4>
-              <ul className="text-xs space-y-1">
-                {scenario === 'young_professional' && (
-                  <>
-                    <li className="text-red-800">• None identified</li>
-                  </>
-                )}
-                {scenario === 'prime_customer' && (
-                  <>
-                    <li className="text-red-800">• None identified</li>
-                  </>
-                )}
-                {scenario === 'climate_adaptive' && (
-                  <>
-                    <li className="text-red-800">• None significant</li>
-                  </>
-                )}
-                {scenario === 'bank_rejection' && (
-                  <>
-                    <li className="text-red-800">• 60-90 DPD recorded in last year</li>
-                    <li className="text-red-800">• Only 68% on-time payment rate</li>
-                    <li className="text-red-800">• 5 active accounts (high debt load)</li>
-                    <li className="text-red-800">• Total debt of ₹2.45L with poor repayment</li>
-                  </>
-                )}
-                {!scenario && (
-                  <>
-                    <li className="text-red-800">• One instance of 30 DPD (12m ago)</li>
-                  </>
-                )}
-              </ul>
-            </div>
-          </div>
-
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
             <div>
               <p className="text-gray-600 text-xs">Credit History</p>
@@ -880,61 +584,11 @@ export const CreditCheck: React.FC<CreditCheckProps> = ({
         </div>
 
         <div className="bg-white p-6 rounded-lg shadow-sm">
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-2">
-              <h3 className="text-xl font-semibold text-gray-900">Alternate Data Analysis</h3>
-              <span className="px-3 py-1 bg-blue-100 text-blue-800 text-xs font-medium rounded">
-                Application-Specific Data
-              </span>
-            </div>
-            <span className="px-4 py-2 rounded-full text-sm font-semibold bg-green-100 text-green-800 border-2 border-green-300">
-              ✓ Positive
+          <div className="flex items-center gap-2 mb-6">
+            <h3 className="text-xl font-semibold text-gray-900">Alternate Data Analysis</h3>
+            <span className="px-3 py-1 bg-green-100 text-green-800 text-xs font-medium rounded">
+              Application-Specific Data
             </span>
-          </div>
-          <div className="mb-6 p-3 bg-green-50 border-l-4 border-green-500 rounded">
-            <p className="text-sm font-semibold text-green-900">
-              ✓ Overall Verdict: This customer's profile is safe and reliable
-            </p>
-            <p className="text-xs text-green-700 mt-1">
-              Strong community ties, stable location indicators, and positive economic activity patterns
-            </p>
-          </div>
-
-          {/* Alternate Data Assessment Factors */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-            <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-              <h4 className="text-sm font-semibold text-green-900 mb-2">Positive Factors</h4>
-              <ul className="text-xs space-y-1">
-                <li className="text-green-800">• Long mobile tenure (6 years) - stable identity</li>
-                <li className="text-green-800">• Established email (4 years) - reliable digital footprint</li>
-                <li className="text-green-800">• Good infrastructure access (8 schools, 3 hospitals nearby)</li>
-                <li className="text-green-800">• Low local crime rate - stable community</li>
-                <li className="text-green-800">• Essential amenities available (water, sanitation)</li>
-              </ul>
-            </div>
-            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-              <h4 className="text-sm font-semibold text-yellow-900 mb-2">Areas to Watch</h4>
-              <ul className="text-xs space-y-1">
-                {scenario === 'climate_adaptive' ? (
-                  <>
-                    <li className="text-yellow-800">• Below-average rainfall (680mm vs 950mm)</li>
-                    <li className="text-yellow-800">• Moderate drought risk (45%) in next 6 months</li>
-                    <li className="text-yellow-800">• -18% crop yield impact expected</li>
-                  </>
-                ) : (
-                  <>
-                    <li className="text-yellow-800">• Moderate geographic saturation (68%)</li>
-                    <li className="text-yellow-800">• Limited asset ownership (no scooter/computer)</li>
-                  </>
-                )}
-              </ul>
-            </div>
-            <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-              <h4 className="text-sm font-semibold text-red-900 mb-2">Risk Factors</h4>
-              <ul className="text-xs space-y-1">
-                <li className="text-red-800">• None identified</li>
-              </ul>
-            </div>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -1073,169 +727,11 @@ export const CreditCheck: React.FC<CreditCheckProps> = ({
         </div>
 
         <div className="bg-white p-6 rounded-lg shadow-sm">
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-2">
-              <h3 className="text-lg font-semibold text-gray-900">Bank Statement Analysis</h3>
-              <span className="px-3 py-1 bg-blue-100 text-blue-800 text-xs font-medium rounded">
-                {application.bank_statement_data?.status || 'V Good'}
-              </span>
-            </div>
-            <span className={`px-4 py-2 rounded-full text-sm font-semibold ${
-              (application.bank_statement_data?.status === 'V Good' || application.bank_statement_data?.status === 'Good') 
-                ? 'bg-green-100 text-green-800 border-2 border-green-300' 
-                : application.bank_statement_data?.status === 'Average'
-                ? 'bg-yellow-100 text-yellow-800 border-2 border-yellow-300'
-                : 'bg-red-100 text-red-800 border-2 border-red-300'
-            }`}>
-              {(application.bank_statement_data?.status === 'V Good' || application.bank_statement_data?.status === 'Good') ? '✓ Positive' : application.bank_statement_data?.status === 'Average' ? '⚠️ Neutral' : '✕ Negative'}
+          <div className="flex items-center gap-2 mb-4">
+            <h3 className="text-lg font-semibold text-gray-900">Bank Statement Analysis</h3>
+            <span className="px-3 py-1 bg-green-100 text-green-800 text-xs font-medium rounded">
+              {application.bank_statement_data?.status || 'V Good'}
             </span>
-          </div>
-          <div className={`mb-4 p-3 border-l-4 rounded ${
-            (application.bank_statement_data?.status === 'V Good' || application.bank_statement_data?.status === 'Good') 
-              ? 'bg-green-50 border-green-500' 
-              : application.bank_statement_data?.status === 'Average'
-              ? 'bg-yellow-50 border-yellow-500'
-              : 'bg-red-50 border-red-500'
-          }`}>
-            <p className={`text-sm font-semibold ${
-              (application.bank_statement_data?.status === 'V Good' || application.bank_statement_data?.status === 'Good') 
-                ? 'text-green-900' 
-                : application.bank_statement_data?.status === 'Average'
-                ? 'text-yellow-900'
-                : 'text-red-900'
-            }`}>
-              {(application.bank_statement_data?.status === 'V Good' || application.bank_statement_data?.status === 'Good') 
-                ? '✓ Overall Verdict: This customer has stable cash flow' 
-                : application.bank_statement_data?.status === 'Average'
-                ? '⚠️ Overall Verdict: This customer has average cash flow patterns'
-                : '✕ Overall Verdict: This customer shows financial instability'}
-            </p>
-            <p className={`text-xs mt-1 ${
-              (application.bank_statement_data?.status === 'V Good' || application.bank_statement_data?.status === 'Good') 
-                ? 'text-green-700' 
-                : application.bank_statement_data?.status === 'Average'
-                ? 'text-yellow-700'
-                : 'text-red-700'
-            }`}>
-              {(application.bank_statement_data?.status === 'V Good' || application.bank_statement_data?.status === 'Good') 
-                ? 'Regular income patterns, healthy account balance, and manageable debt obligations' 
-                : application.bank_statement_data?.status === 'Average'
-                ? 'Adequate income with some irregularities, moderate debt levels'
-                : 'Low balance, excessive outflows, high debt-to-income ratio, and irregular patterns'}
-            </p>
-          </div>
-
-          {/* Bank Statement Assessment Factors */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-            <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-              <h4 className="text-sm font-semibold text-green-900 mb-2">Positive Factors</h4>
-              <ul className="text-xs space-y-1">
-                {scenario === 'young_professional' && (
-                  <>
-                    <li className="text-green-800">• Healthy avg balance (₹18,000)</li>
-                    <li className="text-green-800">• No loan EMIs - debt-free</li>
-                    <li className="text-green-800">• Regular salary inflows (₹32,000/month)</li>
-                    <li className="text-green-800">• Good account stability</li>
-                  </>
-                )}
-                {scenario === 'prime_customer' && (
-                  <>
-                    <li className="text-green-800">• Excellent avg balance (₹95,000)</li>
-                    <li className="text-green-800">• Multiple income sources (business + salary)</li>
-                    <li className="text-green-800">• Very high account stability</li>
-                    <li className="text-green-800">• Low DTI (16.9%) - manageable debt</li>
-                  </>
-                )}
-                {scenario === 'climate_adaptive' && (
-                  <>
-                    <li className="text-green-800">• Good avg balance (₹24,000)</li>
-                    <li className="text-green-800">• Diversified income (agriculture + dairy)</li>
-                    <li className="text-green-800">• Healthy monthly surplus</li>
-                  </>
-                )}
-                {scenario === 'bank_rejection' && (
-                  <>
-                    <li className="text-green-800">• None identified</li>
-                  </>
-                )}
-                {!scenario && (
-                  <>
-                    <li className="text-green-800">• Consistent business inflows</li>
-                    <li className="text-green-800">• Healthy account balance</li>
-                  </>
-                )}
-              </ul>
-            </div>
-            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-              <h4 className="text-sm font-semibold text-yellow-900 mb-2">Areas to Watch</h4>
-              <ul className="text-xs space-y-1">
-                {scenario === 'young_professional' && (
-                  <>
-                    <li className="text-yellow-800">• Limited 6-month statement history</li>
-                    <li className="text-yellow-800">• Single income source (salary only)</li>
-                  </>
-                )}
-                {scenario === 'prime_customer' && (
-                  <>
-                    <li className="text-yellow-800">• High monthly EMI (₹22,000)</li>
-                    <li className="text-yellow-800">• Total outflows at ₹58,500/month</li>
-                  </>
-                )}
-                {scenario === 'climate_adaptive' && (
-                  <>
-                    <li className="text-yellow-800">• Moderate DTI (15.7%)</li>
-                    <li className="text-yellow-800">• Seasonal income variability</li>
-                    <li className="text-yellow-800">• Moderate account stability rating</li>
-                  </>
-                )}
-                {scenario === 'bank_rejection' && (
-                  <>
-                    <li className="text-yellow-800">• Very low income (₹14,000/month total)</li>
-                    <li className="text-yellow-800">• Limited agricultural diversification</li>
-                  </>
-                )}
-                {!scenario && (
-                  <>
-                    <li className="text-yellow-800">• Moderate account activity</li>
-                  </>
-                )}
-              </ul>
-            </div>
-            <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-              <h4 className="text-sm font-semibold text-red-900 mb-2">Risk Factors</h4>
-              <ul className="text-xs space-y-1">
-                {scenario === 'young_professional' && (
-                  <>
-                    <li className="text-red-800">• None identified</li>
-                  </>
-                )}
-                {scenario === 'prime_customer' && (
-                  <>
-                    <li className="text-red-800">• None identified</li>
-                  </>
-                )}
-                {scenario === 'climate_adaptive' && (
-                  <>
-                    <li className="text-red-800">• None significant</li>
-                  </>
-                )}
-                {scenario === 'bank_rejection' && (
-                  <>
-                    <li className="text-red-800">• Very low avg balance (₹1,500)</li>
-                    <li className="text-red-800">• Excessive DTI ratio (68%)</li>
-                    <li className="text-red-800">• Outflows exceed income (₹32,700 vs ₹14,000)</li>
-                    <li className="text-red-800">• Multiple bounced EMI payments</li>
-                    <li className="text-red-800">• Irregular income patterns</li>
-                    <li className="text-red-800">• Very low account stability</li>
-                  </>
-                )}
-                {!scenario && (
-                  <>
-                    <li className="text-red-800">• None identified</li>
-                  </>
-                )}
-              </ul>
-            </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
