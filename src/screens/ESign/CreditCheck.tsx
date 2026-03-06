@@ -947,7 +947,7 @@ export const CreditCheck: React.FC<CreditCheckProps> = ({
               <ul className="text-xs space-y-1">
                 {scenario === 'young_professional' && (
                   <>
-                    <li className="text-yellow-800">• Credit utilization to monitor (20%)</li>
+                    <li className="text-yellow-800">• 3 months of very high utilization (75%+) recorded in the past year</li>
                     <li className="text-yellow-800">• Single credit product type (credit card only)</li>
                   </>
                 )}
