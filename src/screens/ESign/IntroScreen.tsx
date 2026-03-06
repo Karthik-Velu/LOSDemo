@@ -14,7 +14,7 @@ export const IntroScreen: React.FC<IntroScreenProps> = ({ onNext }) => {
       name: "Young Professional", 
       color: "blue", 
       icon: "👤", 
-      description: "Urban informal worker with daily wages in Pune's manufacturing sector",
+      description: "Auto components factory worker, attendance-linked monthly pay, Bhosari MIDC, Pune",
       outcome: "Auto-Approved • 13% APR • ₹43,000 eligible"
     },
     { 

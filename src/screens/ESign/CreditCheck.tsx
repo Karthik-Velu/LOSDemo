@@ -12,20 +12,20 @@
  *
  * [REQ-2a] CREDIT HISTORY DURATION
  *   Was:  credit_history_length: '0 years' (first-time borrower).
- *   Fix:  credit_history_length: '3 years', with 1 active credit card, 96% on-time,
+ *   Fix:  credit_history_length: '3 years', with 1 active BNPL/digital credit account, 96% on-time,
  *         never DPD, 20% utilization, ₹15,000 outstanding balance.
  *
  * [REQ-2b] BUREAU DETAILS — FIRST-TIME BORROWER LANGUAGE
  *   Was:  Bureau "Areas to Watch" said "No credit history (first-time borrower)"
  *         and "No payment history to assess".
- *   Fix:  Replaced with "Credit utilization to monitor (20%)" and
- *         "Single credit product type (credit card only)".
+ *   Fix:  Replaced with "3 months of very high utilization (75%+) recorded in the past year" and
+ *         "Single credit product type (BNPL/digital credit line only)".
  *         Also updated positive factors to reflect 3-year history and 96% on-time rate.
  *
  * [REQ-2c] RISK FACTORS
  *   Was:  Risk Factors showed "None identified" — no observation at all.
- *   Fix:  Added "Limited credit mix — only unsecured credit card exposure"
- *         (mild, relevant observation for a young salaried professional).
+ *   Fix:  Added "Limited credit mix — BNPL/digital credit only, no secured loan history"
+ *         (mild, relevant observation for a factory worker with formal contract).
  *
  * [REQ-2d] INTEREST RATE
  *   Was:  APR calculated as 17% (Ki score 38 falls in Generic "Good" band, 26-45).
@@ -289,17 +289,17 @@ export const CreditCheck: React.FC<CreditCheckProps> = ({
     // Scenario-specific bureau data
     let bureauData: any;
     if (scenario === 'young_professional') {
-      // Established salaried professional — 3 years of clean credit card history
+      // Auto components factory worker — 3 years of BNPL/digital credit history
       bureauData = {
         credit_history_length: '3 years',
-        active_accounts: 1,        // 1 credit card
+        active_accounts: 1,        // 1 BNPL/digital credit account (Simpl-type line)
         inquiries_180d: 1,
         worst_dpd_12m: 'Never',
         credit_utilization: '20%', // responsibly low
         on_time_payment_rate: '96%',
         secured_loans: 0,
-        unsecured_loans: 1,        // credit card
-        total_balance: 15000,      // outstanding credit card balance
+        unsecured_loans: 1,        // BNPL/digital credit account
+        total_balance: 15000,      // outstanding BNPL balance
         oldest_account: '3 years',
       };
     } else if (scenario === 'prime_customer') {
@@ -428,7 +428,7 @@ export const CreditCheck: React.FC<CreditCheckProps> = ({
             establishments_within_5km: '240+',
             sector_employment_trend: 'Growing (+4.2% YoY)',
             avg_daily_wage_range: '₹650 – ₹750/day',
-            wage_payment_regularity: '78% workers paid daily or weekly',
+            wage_payment_regularity: 'Pay settled end-of-month based on attendance records (muster roll)',
             sector_par30: '5.1%',
             peer_cohort_approval_rate: '74%',
           },
@@ -445,7 +445,7 @@ export const CreditCheck: React.FC<CreditCheckProps> = ({
         ? {
             status: 'Good',
             inflows: { daily_wages: 15000, other: 2500 }, // ₹700/day × ~21 days + odd jobs
-            outflows: { emi: 750, utilities: 3200, other: 8500 }, // emi = credit card min payment on ₹15K outstanding
+            outflows: { emi: 750, utilities: 3200, other: 8500 }, // emi = monthly BNPL repayment on ₹15K digital credit outstanding
             insights: { avg_balance: 8500, dti: '4.3%', stability: 'Moderate' },
           }
         : scenario === 'prime_customer'
@@ -524,13 +524,13 @@ export const CreditCheck: React.FC<CreditCheckProps> = ({
             whats_good: [
               '3 years of established credit history',
               'Clean repayment record — 96% on-time, never DPD',
-              'Low debt-service ratio (4.3% DTI) — credit card minimum payment only',
-              'Consistent cashflow — daily wage deposits totalling ₹17,500/month',
+              'Low debt-service ratio (4.3% DTI) — BNPL/digital credit repayment only',
+              'Consistent cashflow — attendance-linked monthly wages (₹14,000–₹17,500 range)',
               'Urban location (Pimpri-Chinchwad MIDC) with strong employment density',
               'Strong digital footprint (6yr SIM, 4yr email)',
             ],
             needs_improvement: [
-              'Single informal income source — daily wages, no employer contract',
+              'Attendance-linked monthly wages — income varies with days present (formal muster roll employment)',
               '62% of transactions are cash-based — high cash dependency limits verifiable income trail',
             ],
             whats_bad: [
@@ -948,7 +948,7 @@ export const CreditCheck: React.FC<CreditCheckProps> = ({
                 {scenario === 'young_professional' && (
                   <>
                     <li className="text-yellow-800">• 3 months of very high utilization (75%+) recorded in the past year</li>
-                    <li className="text-yellow-800">• Single credit product type (credit card only)</li>
+                    <li className="text-yellow-800">• Single credit product type (BNPL/digital credit line only)</li>
                   </>
                 )}
                 {scenario === 'prime_customer' && (
@@ -980,7 +980,7 @@ export const CreditCheck: React.FC<CreditCheckProps> = ({
               <ul className="text-xs space-y-1">
                 {scenario === 'young_professional' && (
                   <>
-                    <li className="text-red-800">• Limited credit mix — only unsecured credit card exposure</li>
+                    <li className="text-red-800">• Limited credit mix — BNPL/digital credit only, no secured loan history</li>
                   </>
                 )}
                 {scenario === 'prime_customer' && (
@@ -1100,7 +1100,7 @@ export const CreditCheck: React.FC<CreditCheckProps> = ({
                 {scenario === 'young_professional' ? (
                   <>
                     <li className="text-yellow-800">• Sector PAR30 slightly elevated (5.1%) for manufacturing workers</li>
-                    <li className="text-yellow-800">• Daily wage income subject to attendance and seasonal variation</li>
+                    <li className="text-yellow-800">• Monthly wages attendance-linked — income variability of ±₹1,500–₹2,000 based on days present</li>
                   </>
                 ) : scenario === 'climate_adaptive' ? (
                   <>
@@ -1251,7 +1251,7 @@ export const CreditCheck: React.FC<CreditCheckProps> = ({
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-600">Wage payment regularity:</span>
-                    <span className="font-medium text-green-600">78% workers (daily/weekly)</span>
+                    <span className="font-medium text-green-600">End-of-month (muster roll)</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-600">Sector PAR30:</span>
@@ -1401,7 +1401,7 @@ export const CreditCheck: React.FC<CreditCheckProps> = ({
               </div>
               <p className="text-sm text-blue-800">
                 {(application as any).demo_scenario_id === 'young_professional'
-                  ? <>Estimated <strong>₹15,000 – ₹20,000 monthly income</strong> based on daily wage cashflow analysis and occupation-level wage benchmarks for urban manufacturing workers (Bhosari MIDC, Pune).</>
+                  ? <>Estimated <strong>₹14,000 – ₹17,500 monthly income</strong> based on attendance-linked monthly wage pattern and occupation-level benchmarks for auto components manufacturing workers (Bhosari MIDC, Pune).</>
                   : <>Estimated <strong>₹35,000 – ₹45,000 monthly household income</strong> based on agricultural output, local market activity, and rural spending patterns.</>
                 }
               </p>
@@ -1469,8 +1469,8 @@ export const CreditCheck: React.FC<CreditCheckProps> = ({
               <ul className="text-xs space-y-1">
                 {scenario === 'young_professional' && (
                   <>
-                    <li className="text-green-800">• Consistent daily wage deposits (₹700/day avg)</li>
-                    <li className="text-green-800">• Low debt-service ratio (4.3% DTI — credit card minimum only)</li>
+                    <li className="text-green-800">• Consistent monthly wage deposits — attendance-linked (₹14,000–₹16,000 range)</li>
+                    <li className="text-green-800">• Low debt-service ratio (4.3% DTI — BNPL/digital credit repayment only)</li>
                     <li className="text-green-800">• Cashflow volume stable across 6 months</li>
                   </>
                 )}

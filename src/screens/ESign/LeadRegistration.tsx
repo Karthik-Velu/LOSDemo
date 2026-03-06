@@ -50,7 +50,7 @@ export const LeadRegistration: React.FC<LeadRegistrationProps> = ({
     {
       id: 'young_professional',
       title: 'Young Professional',
-      description: 'Urban informal worker, daily wages, Pune',
+      description: 'Auto components factory worker, attendance-linked pay, Pune',
       color: 'blue',
       data: {
         applicant_name: 'Kiran Desai',
