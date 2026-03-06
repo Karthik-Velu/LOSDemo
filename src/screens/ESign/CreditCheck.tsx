@@ -389,8 +389,8 @@ export const CreditCheck: React.FC<CreditCheckProps> = ({
           email_tenure: '4 years',
         },
         income_estimates: {
-          monthly_household_income: scenario === 'young_professional' ? 35000 : 36000,
-          monthly_debt_repayments: scenario === 'young_professional' ? 0 : 4200,
+          monthly_household_income: scenario === 'young_professional' ? 17500 : 36000,
+          monthly_debt_repayments: scenario === 'young_professional' ? 750 : 4200,
           drinking_water_access: 'Yes',
           toilet_access: 'Yes',
           lpg_cooking: 'No',
@@ -398,6 +398,41 @@ export const CreditCheck: React.FC<CreditCheckProps> = ({
           computer_ownership: 'No',
           refrigerator_ownership: 'Yes',
         },
+        ...(scenario === 'young_professional' && {
+          area_default_propensity: {
+            par30_similar_cohort: '4.2%',
+            default_rate_informal_wage: '3.8%',
+            leverage_ratio_median: '1.4x annual income',
+            bounce_rate_similar_ticket: '6.1%',
+            ontime_payment_trend: 'Improving (+2.3% YoY)',
+          },
+          pincode_development: {
+            development_score: '6.8/10',
+            pucca_housing_pct: '72%',
+            electricity_access_pct: '94%',
+            road_quality_index: '7.1/10',
+            financial_density: '3.2 branches/km²',
+            healthcare: '2 hospitals, 8 clinics within 2km',
+            education: '5 schools, 2 colleges within 3km',
+          },
+          general_geo_economic_activity: {
+            gdp_growth_area: '+8.2% YoY',
+            new_business_registrations: '+340 in last 12 months',
+            consumer_spend_index: '₹52,000/household/month',
+            credit_absorption_growth: '+12.4%',
+            employment_growth: '+6.8% YoY',
+            commercial_density: 'High — MIDC industrial zone',
+          },
+          occupation_specific_activity: {
+            sector: 'Manufacturing / Auto Components',
+            establishments_within_5km: '240+',
+            sector_employment_trend: 'Growing (+4.2% YoY)',
+            avg_daily_wage_range: '₹650 – ₹750/day',
+            wage_payment_regularity: '78% workers paid daily or weekly',
+            sector_par30: '5.1%',
+            peer_cohort_approval_rate: '74%',
+          },
+        }),
       },
       bank_statement_data: scenario === 'bank_rejection'
         ? {
@@ -409,9 +444,9 @@ export const CreditCheck: React.FC<CreditCheckProps> = ({
         : scenario === 'young_professional'
         ? {
             status: 'Good',
-            inflows: { salary: 32000, other: 3000 },
-            outflows: { emi: 0, utilities: 4500, other: 12000 }, // NO EMI - first-time applicant
-            insights: { avg_balance: 18000, dti: '0%', stability: 'Good' },
+            inflows: { daily_wages: 15000, other: 2500 }, // ₹700/day × ~21 days + odd jobs
+            outflows: { emi: 750, utilities: 3200, other: 8500 }, // emi = credit card min payment on ₹15K outstanding
+            insights: { avg_balance: 8500, dti: '4.3%', stability: 'Moderate' },
           }
         : scenario === 'prime_customer'
         ? {
@@ -489,13 +524,14 @@ export const CreditCheck: React.FC<CreditCheckProps> = ({
             whats_good: [
               '3 years of established credit history',
               'Clean repayment record — 96% on-time, never DPD',
-              'Debt-free profile — no existing loan EMI burden',
-              'Stable salary inflows (₹32,000/month)',
+              'Low debt-service ratio (4.3% DTI) — credit card minimum payment only',
+              'Consistent cashflow — daily wage deposits totalling ₹17,500/month',
+              'Urban location (Pimpri-Chinchwad MIDC) with strong employment density',
               'Strong digital footprint (6yr SIM, 4yr email)',
             ],
             needs_improvement: [
-              'Single income source (salary only)',
-              'Limited 6-month bank statement history available',
+              'Single informal income source — daily wages, no employer contract',
+              'Below-average account balance (₹8,500) — typical for daily-wage cashflow pattern',
             ],
             whats_bad: [
               'Limited credit mix — only unsecured credit exposure, no prior loan repayment history',
@@ -1027,7 +1063,10 @@ export const CreditCheck: React.FC<CreditCheckProps> = ({
               ✓ Overall Verdict: This customer's profile is safe and reliable
             </p>
             <p className="text-xs text-green-700 mt-1">
-              Strong community ties, stable location indicators, and positive economic activity patterns
+              {scenario === 'young_professional'
+                ? 'Strong employment base, acceptable area default rates, and improving peer cohort repayment trends'
+                : 'Strong community ties, stable location indicators, and positive economic activity patterns'
+              }
             </p>
           </div>
 
@@ -1036,17 +1075,34 @@ export const CreditCheck: React.FC<CreditCheckProps> = ({
             <div className="bg-green-50 border border-green-200 rounded-lg p-4">
               <h4 className="text-sm font-semibold text-green-900 mb-2">Positive Factors</h4>
               <ul className="text-xs space-y-1">
-                <li className="text-green-800">• Long mobile tenure (6 years) - stable identity</li>
-                <li className="text-green-800">• Established email (4 years) - reliable digital footprint</li>
-                <li className="text-green-800">• Good infrastructure access (8 schools, 3 hospitals nearby)</li>
-                <li className="text-green-800">• Low local crime rate - stable community</li>
-                <li className="text-green-800">• Essential amenities available (water, sanitation)</li>
+                {scenario === 'young_professional' ? (
+                  <>
+                    <li className="text-green-800">• Strong area employment base — Bhosari MIDC industrial zone</li>
+                    <li className="text-green-800">• Pincode development score 6.8/10 — above district average</li>
+                    <li className="text-green-800">• Peer cohort shows improving repayment trend (+2.3% YoY)</li>
+                    <li className="text-green-800">• Long mobile tenure (6 years) — stable identity</li>
+                    <li className="text-green-800">• Established email (4 years) — reliable digital footprint</li>
+                  </>
+                ) : (
+                  <>
+                    <li className="text-green-800">• Long mobile tenure (6 years) - stable identity</li>
+                    <li className="text-green-800">• Established email (4 years) - reliable digital footprint</li>
+                    <li className="text-green-800">• Good infrastructure access (8 schools, 3 hospitals nearby)</li>
+                    <li className="text-green-800">• Low local crime rate - stable community</li>
+                    <li className="text-green-800">• Essential amenities available (water, sanitation)</li>
+                  </>
+                )}
               </ul>
             </div>
             <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
               <h4 className="text-sm font-semibold text-yellow-900 mb-2">Areas to Watch</h4>
               <ul className="text-xs space-y-1">
-                {scenario === 'climate_adaptive' ? (
+                {scenario === 'young_professional' ? (
+                  <>
+                    <li className="text-yellow-800">• Sector PAR30 slightly elevated (5.1%) for manufacturing workers</li>
+                    <li className="text-yellow-800">• Daily wage income subject to attendance and seasonal variation</li>
+                  </>
+                ) : scenario === 'climate_adaptive' ? (
                   <>
                     <li className="text-yellow-800">• Below-average rainfall (680mm vs 950mm)</li>
                     <li className="text-yellow-800">• Moderate drought risk (45%) in next 6 months</li>
@@ -1068,113 +1124,257 @@ export const CreditCheck: React.FC<CreditCheckProps> = ({
             </div>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div className="bg-blue-50 p-4 rounded-lg">
-              <div className="flex items-center gap-2 mb-3">
-                <div className="w-8 h-8 bg-blue-600 rounded flex items-center justify-center text-white text-sm font-bold">
-                  {(application as any).demo_scenario_id === 'climate_adaptive' ? '🌦️' : '📊'}
-                </div>
-                <h4 className="font-semibold text-blue-900">
-                  {(application as any).demo_scenario_id === 'climate_adaptive' ? 'Climate Risk Indicators' : 'Market Stress Indicators'}
-                </h4>
-              </div>
-              <div className="space-y-2 text-sm">
-                {(application as any).demo_scenario_id === 'climate_adaptive' ? (
-                  <>
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Annual Rainfall (2024):</span>
-                      <span className="font-medium text-red-600">680mm (Below Avg)</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Historical Average:</span>
-                      <span className="font-medium text-gray-700">950mm/year</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Drought Risk (Next 6m):</span>
-                      <span className="font-medium text-orange-600">Moderate (45%)</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Flood Risk:</span>
-                      <span className="font-medium text-green-600">Low (12%)</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Crop Yield Impact:</span>
-                      <span className="font-medium text-orange-600">-18% (Rice/Wheat)</span>
-                    </div>
-                  </>
-                ) : (
-                  <>
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Portfolio at Risk (PAR):</span>
-                      <span className="font-medium text-green-600">2.3% (Low)</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Geographic Saturation:</span>
-                      <span className="font-medium text-yellow-600">68% (Moderate)</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Asset Class Performance:</span>
-                      <span className="font-medium text-green-600">+12% (Strong)</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Demographic Risk:</span>
-                      <span className="font-medium text-green-600">Low Concentration</span>
-                    </div>
-                  </>
-                )}
-              </div>
-            </div>
+          {/* young_professional: 4-panel 2x2 grid */}
+          {scenario === 'young_professional' ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 
-            <div className="bg-green-50 p-4 rounded-lg">
-              <div className="flex items-center gap-2 mb-3">
-                <div className="w-8 h-8 bg-green-600 rounded flex items-center justify-center text-white text-sm font-bold">🏭</div>
-                <h4 className="font-semibold text-green-900">Economic Activity & Affluence</h4>
+              {/* Panel 1: Area Default Propensity */}
+              <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                <div className="flex items-center gap-2 mb-1">
+                  <div className="w-8 h-8 bg-blue-600 rounded flex items-center justify-center text-white text-sm">📉</div>
+                  <h4 className="font-semibold text-blue-900">Borrower Default Propensity — Similar Cohort</h4>
+                </div>
+                <p className="text-xs text-blue-700 mb-3">Demographic &amp; occupation-based leverage and repayment patterns in this area</p>
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">PAR30 (similar cohort, area):</span>
+                    <span className="font-medium text-green-600">4.2% (Acceptable)</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Default rate — informal wage workers:</span>
+                    <span className="font-medium text-green-600">3.8%</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Median leverage ratio:</span>
+                    <span className="font-medium text-green-600">1.4× annual income</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Bounce rate (₹40K–₹60K ticket):</span>
+                    <span className="font-medium text-yellow-600">6.1%</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">On-time payment trend:</span>
+                    <span className="font-medium text-green-600">Improving (+2.3% YoY)</span>
+                  </div>
+                </div>
               </div>
-              <div className="space-y-2 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Commercial Density:</span>
-                  <span className="font-medium text-green-600">8 establishments/km²</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Consumer Spending:</span>
-                  <span className="font-medium text-green-600">₹45K/month avg</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Transport Hub Proximity:</span>
-                  <span className="font-medium text-green-600">15km to nearest town</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Agricultural Land Value:</span>
-                  <span className="font-medium text-green-600">₹2.5L/acre</span>
-                </div>
-              </div>
-            </div>
 
-            <div className="bg-purple-50 p-4 rounded-lg">
-              <div className="flex items-center gap-2 mb-3">
-                <div className="w-8 h-8 bg-purple-600 rounded flex items-center justify-center text-white text-sm font-bold">🏘️</div>
-                <h4 className="font-semibold text-purple-900">Hyperlocal Infrastructure</h4>
+              {/* Panel 2: Pincode Development Index */}
+              <div className="bg-purple-50 p-4 rounded-lg border border-purple-200">
+                <div className="flex items-center gap-2 mb-1">
+                  <div className="w-8 h-8 bg-purple-600 rounded flex items-center justify-center text-white text-sm">🏙️</div>
+                  <h4 className="font-semibold text-purple-900">Pincode Development Index</h4>
+                </div>
+                <p className="text-xs text-purple-700 mb-3">Infrastructure quality and development level of PIN 411026 (Bhosari, Pune)</p>
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Development score:</span>
+                    <span className="font-medium text-green-600">6.8/10 (Above avg)</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Pucca / permanent housing:</span>
+                    <span className="font-medium text-green-600">72%</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Electricity access:</span>
+                    <span className="font-medium text-green-600">94% households</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Road quality index:</span>
+                    <span className="font-medium text-green-600">7.1/10</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Financial density:</span>
+                    <span className="font-medium text-green-600">3.2 branches/km²</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Healthcare nearby:</span>
+                    <span className="font-medium text-green-600">2 hospitals, 8 clinics</span>
+                  </div>
+                </div>
               </div>
-              <div className="space-y-2 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Road Quality Index:</span>
-                  <span className="font-medium text-green-600">8.2/10</span>
+
+              {/* Panel 3: General Geographic Economic Activity */}
+              <div className="bg-green-50 p-4 rounded-lg border border-green-200">
+                <div className="flex items-center gap-2 mb-1">
+                  <div className="w-8 h-8 bg-green-600 rounded flex items-center justify-center text-white text-sm">🏭</div>
+                  <h4 className="font-semibold text-green-900">General Geographic Economic Activity</h4>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Financial Access:</span>
-                  <span className="font-medium text-green-600">4 branches/1000</span>
+                <p className="text-xs text-green-700 mb-3">Area-level economic health and employment stability (Pimpri-Chinchwad)</p>
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Area GDP growth:</span>
+                    <span className="font-medium text-green-600">+8.2% YoY</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">New business registrations:</span>
+                    <span className="font-medium text-green-600">+340 (last 12 months)</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Consumer spend index:</span>
+                    <span className="font-medium text-green-600">₹52K/household/month</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Credit absorption growth:</span>
+                    <span className="font-medium text-green-600">+12.4%</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Employment growth:</span>
+                    <span className="font-medium text-green-600">+6.8% YoY</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Commercial density:</span>
+                    <span className="font-medium text-green-600">High — MIDC zone</span>
+                  </div>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Livelihood Options:</span>
-                  <span className="font-medium text-green-600">High Diversity</span>
+              </div>
+
+              {/* Panel 4: Occupation-Specific Economic Activity */}
+              <div className="bg-orange-50 p-4 rounded-lg border border-orange-200">
+                <div className="flex items-center gap-2 mb-1">
+                  <div className="w-8 h-8 bg-orange-600 rounded flex items-center justify-center text-white text-sm">⚙️</div>
+                  <h4 className="font-semibold text-orange-900">Occupation-Specific Economic Activity</h4>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Social Safety Index:</span>
-                  <span className="font-medium text-green-600">7.8/10</span>
+                <p className="text-xs text-orange-700 mb-3">Manufacturing / auto components sector — within 5km of borrower location</p>
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Sector establishments (5km):</span>
+                    <span className="font-medium text-green-600">240+</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Sector employment trend:</span>
+                    <span className="font-medium text-green-600">Growing (+4.2% YoY)</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Average daily wage (sector):</span>
+                    <span className="font-medium text-green-600">₹650 – ₹750/day</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Wage payment regularity:</span>
+                    <span className="font-medium text-green-600">78% workers (daily/weekly)</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Sector PAR30:</span>
+                    <span className="font-medium text-yellow-600">5.1%</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Peer cohort approval rate:</span>
+                    <span className="font-medium text-green-600">74%</span>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          ) : (
+            /* Other scenarios: original 3-panel grid */
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <div className="bg-blue-50 p-4 rounded-lg">
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="w-8 h-8 bg-blue-600 rounded flex items-center justify-center text-white text-sm font-bold">
+                    {(application as any).demo_scenario_id === 'climate_adaptive' ? '🌦️' : '📊'}
+                  </div>
+                  <h4 className="font-semibold text-blue-900">
+                    {(application as any).demo_scenario_id === 'climate_adaptive' ? 'Climate Risk Indicators' : 'Market Stress Indicators'}
+                  </h4>
+                </div>
+                <div className="space-y-2 text-sm">
+                  {(application as any).demo_scenario_id === 'climate_adaptive' ? (
+                    <>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Annual Rainfall (2024):</span>
+                        <span className="font-medium text-red-600">680mm (Below Avg)</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Historical Average:</span>
+                        <span className="font-medium text-gray-700">950mm/year</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Drought Risk (Next 6m):</span>
+                        <span className="font-medium text-orange-600">Moderate (45%)</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Flood Risk:</span>
+                        <span className="font-medium text-green-600">Low (12%)</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Crop Yield Impact:</span>
+                        <span className="font-medium text-orange-600">-18% (Rice/Wheat)</span>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Portfolio at Risk (PAR):</span>
+                        <span className="font-medium text-green-600">2.3% (Low)</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Geographic Saturation:</span>
+                        <span className="font-medium text-yellow-600">68% (Moderate)</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Asset Class Performance:</span>
+                        <span className="font-medium text-green-600">+12% (Strong)</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Demographic Risk:</span>
+                        <span className="font-medium text-green-600">Low Concentration</span>
+                      </div>
+                    </>
+                  )}
+                </div>
+              </div>
+
+              <div className="bg-green-50 p-4 rounded-lg">
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="w-8 h-8 bg-green-600 rounded flex items-center justify-center text-white text-sm font-bold">🏭</div>
+                  <h4 className="font-semibold text-green-900">Economic Activity & Affluence</h4>
+                </div>
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Commercial Density:</span>
+                    <span className="font-medium text-green-600">8 establishments/km²</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Consumer Spending:</span>
+                    <span className="font-medium text-green-600">₹45K/month avg</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Transport Hub Proximity:</span>
+                    <span className="font-medium text-green-600">15km to nearest town</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Agricultural Land Value:</span>
+                    <span className="font-medium text-green-600">₹2.5L/acre</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-purple-50 p-4 rounded-lg">
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="w-8 h-8 bg-purple-600 rounded flex items-center justify-center text-white text-sm font-bold">🏘️</div>
+                  <h4 className="font-semibold text-purple-900">Hyperlocal Infrastructure</h4>
+                </div>
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Road Quality Index:</span>
+                    <span className="font-medium text-green-600">8.2/10</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Financial Access:</span>
+                    <span className="font-medium text-green-600">4 branches/1000</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Livelihood Options:</span>
+                    <span className="font-medium text-green-600">High Diversity</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Social Safety Index:</span>
+                    <span className="font-medium text-green-600">7.8/10</span>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
+          )}
 
           <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="bg-green-50 border border-green-200 p-4 rounded-lg">
@@ -1185,7 +1385,10 @@ export const CreditCheck: React.FC<CreditCheckProps> = ({
                 <h4 className="font-semibold text-green-900">Default Risk Assessment</h4>
               </div>
               <p className="text-sm text-green-800">
-                <strong>Low default probability</strong> based on market stress indicators and local economic factors.
+                {scenario === 'young_professional'
+                  ? <><strong>Moderate-low default probability.</strong> Area cohort PAR30 (4.2%) and occupation-specific default rate (3.8%) are within acceptable lending thresholds. Repayment trend is improving.</>
+                  : <><strong>Low default probability</strong> based on market stress indicators and local economic factors.</>
+                }
               </p>
             </div>
 
@@ -1198,7 +1401,7 @@ export const CreditCheck: React.FC<CreditCheckProps> = ({
               </div>
               <p className="text-sm text-blue-800">
                 {(application as any).demo_scenario_id === 'young_professional'
-                  ? <>Estimated <strong>₹32,000 – ₹38,000 monthly income</strong> based on salary income and bank statement analysis.</>
+                  ? <>Estimated <strong>₹15,000 – ₹20,000 monthly income</strong> based on daily wage cashflow analysis and occupation-level wage benchmarks for urban manufacturing workers (Bhosari MIDC, Pune).</>
                   : <>Estimated <strong>₹35,000 – ₹45,000 monthly household income</strong> based on agricultural output, local market activity, and rural spending patterns.</>
                 }
               </p>
@@ -1266,10 +1469,9 @@ export const CreditCheck: React.FC<CreditCheckProps> = ({
               <ul className="text-xs space-y-1">
                 {scenario === 'young_professional' && (
                   <>
-                    <li className="text-green-800">• Healthy avg balance (₹18,000)</li>
-                    <li className="text-green-800">• No loan EMIs - debt-free</li>
-                    <li className="text-green-800">• Regular salary inflows (₹32,000/month)</li>
-                    <li className="text-green-800">• Good account stability</li>
+                    <li className="text-green-800">• Consistent daily wage deposits (₹700/day avg)</li>
+                    <li className="text-green-800">• Low debt-service ratio (4.3% DTI — credit card minimum only)</li>
+                    <li className="text-green-800">• Cashflow volume stable across 6 months</li>
                   </>
                 )}
                 {scenario === 'prime_customer' && (
@@ -1305,8 +1507,9 @@ export const CreditCheck: React.FC<CreditCheckProps> = ({
               <ul className="text-xs space-y-1">
                 {scenario === 'young_professional' && (
                   <>
-                    <li className="text-yellow-800">• Limited 6-month statement history</li>
-                    <li className="text-yellow-800">• Single income source (salary only)</li>
+                    <li className="text-yellow-800">• Fragmented deposit pattern — daily credits, not a single monthly credit</li>
+                    <li className="text-yellow-800">• Income variability month-to-month (±15%)</li>
+                    <li className="text-yellow-800">• Below-average account balance (₹8,500)</li>
                   </>
                 )}
                 {scenario === 'prime_customer' && (
@@ -1379,16 +1582,16 @@ export const CreditCheck: React.FC<CreditCheckProps> = ({
                 {scenario === 'young_professional' ? (
                   <>
                     <div className="flex justify-between">
-                      <span className="text-gray-600">Salary Income</span>
-                      <span className="font-medium text-green-600">₹{(application.bank_statement_data?.inflows?.salary ?? 32000).toLocaleString('en-IN')}</span>
+                      <span className="text-gray-600">Daily Wages</span>
+                      <span className="font-medium text-green-600">₹{(application.bank_statement_data?.inflows?.daily_wages ?? 15000).toLocaleString('en-IN')}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-gray-600">Other Income</span>
-                      <span className="font-medium text-green-600">₹{(application.bank_statement_data?.inflows?.other ?? 3000).toLocaleString('en-IN')}</span>
+                      <span className="text-gray-600">Other / Odd Jobs</span>
+                      <span className="font-medium text-green-600">₹{(application.bank_statement_data?.inflows?.other ?? 2500).toLocaleString('en-IN')}</span>
                     </div>
                     <div className="flex justify-between font-semibold border-t pt-2">
                       <span className="text-gray-900">Total Income</span>
-                      <span className="text-green-600">₹{((application.bank_statement_data?.inflows?.salary ?? 32000) + (application.bank_statement_data?.inflows?.other ?? 3000)).toLocaleString('en-IN')}</span>
+                      <span className="text-green-600">₹{((application.bank_statement_data?.inflows?.daily_wages ?? 15000) + (application.bank_statement_data?.inflows?.other ?? 2500)).toLocaleString('en-IN')}</span>
                     </div>
                   </>
                 ) : scenario === 'prime_customer' ? (
@@ -1457,8 +1660,8 @@ export const CreditCheck: React.FC<CreditCheckProps> = ({
                 <div className="flex justify-between">
                   <span className="text-gray-600">Disposable Income</span>
                   <span className="font-medium text-blue-600">
-                    {scenario === 'young_professional'
-                      ? `₹${(((application.bank_statement_data?.inflows?.salary ?? 32000) + (application.bank_statement_data?.inflows?.other ?? 3000)) - ((application.bank_statement_data?.outflows?.emi ?? 0) + (application.bank_statement_data?.outflows?.utilities ?? 4500) + (application.bank_statement_data?.outflows?.other ?? 12000))).toLocaleString('en-IN')}`
+                      {scenario === 'young_professional'
+                      ? `₹${(((application.bank_statement_data?.inflows?.daily_wages ?? 15000) + (application.bank_statement_data?.inflows?.other ?? 2500)) - ((application.bank_statement_data?.outflows?.emi ?? 750) + (application.bank_statement_data?.outflows?.utilities ?? 3200) + (application.bank_statement_data?.outflows?.other ?? 8500))).toLocaleString('en-IN')}`
                       : scenario === 'prime_customer'
                       ? `₹${(((application.bank_statement_data?.inflows?.business ?? 85000) + (application.bank_statement_data?.inflows?.salary ?? 45000)) - ((application.bank_statement_data?.outflows?.emi ?? 22000) + (application.bank_statement_data?.outflows?.utilities ?? 8500) + (application.bank_statement_data?.outflows?.other ?? 28000))).toLocaleString('en-IN')}`
                       : `₹${(((application.bank_statement_data?.inflows?.agri ?? 28000) + (application.bank_statement_data?.inflows?.dairy ?? 8000)) - ((application.bank_statement_data?.outflows?.emi ?? 4200) + (application.bank_statement_data?.outflows?.utilities ?? 6200) + (application.bank_statement_data?.outflows?.other ?? 18300))).toLocaleString('en-IN')}`
@@ -1482,11 +1685,11 @@ export const CreditCheck: React.FC<CreditCheckProps> = ({
             <h4 className="font-semibold text-gray-900 mb-2">Transaction Patterns</h4>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
               <div className="text-center">
-                <div className="text-2xl font-bold text-green-600">94%</div>
+                <div className="text-2xl font-bold text-green-600">{scenario === 'young_professional' ? '68%' : '94%'}</div>
                 <div className="text-gray-600">Regular Deposits</div>
               </div>
               <div className="text-center">
-                <div className="text-2xl font-bold text-blue-600">₹1.2L</div>
+                <div className="text-2xl font-bold text-blue-600">{scenario === 'young_professional' ? '₹1.1L' : '₹1.2L'}</div>
                 <div className="text-gray-600">6-Month Volume</div>
               </div>
               <div className="text-center">
