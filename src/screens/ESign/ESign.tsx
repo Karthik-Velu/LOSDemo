@@ -124,6 +124,11 @@ export const ESign = (): JSX.Element => {
     }
   };
 
+  // Scroll to top on every step transition (fixes landing at bottom of new page)
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [currentStepIndex]);
+
   const moveToNextStep = async () => {
     if (currentStepIndex < workflowSteps.length - 1) {
       const nextStep = workflowSteps[currentStepIndex + 1];

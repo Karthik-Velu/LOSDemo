@@ -350,11 +350,7 @@ export const KYCVerification: React.FC<KYCVerificationProps> = ({
                             <>
                               <li className="text-yellow-800 flex items-start gap-2">
                                 <span className="text-yellow-600 mt-0.5">•</span>
-                                <span>Recent mobile number activation (6 months)</span>
-                              </li>
-                              <li className="text-yellow-800 flex items-start gap-2">
-                                <span className="text-yellow-600 mt-0.5">•</span>
-                                <span>First-time loan applicant</span>
+                                <span>First application to this lender — no prior relationship</span>
                               </li>
                             </>
                           )}
