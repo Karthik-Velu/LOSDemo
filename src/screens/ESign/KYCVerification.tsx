@@ -344,7 +344,7 @@ export const KYCVerification: React.FC<KYCVerificationProps> = ({
                         <>
                           <li className="text-yellow-800 flex items-start gap-2">
                             <span className="text-yellow-600 mt-0.5">•</span>
-                            <span>Limited digital transaction history</span>
+                            <span>High proportion of cash transactions — limited digital payment trail</span>
                           </li>
                           {scenario === 'young_professional' && (
                             <>

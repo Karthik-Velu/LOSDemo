@@ -531,7 +531,7 @@ export const CreditCheck: React.FC<CreditCheckProps> = ({
             ],
             needs_improvement: [
               'Single informal income source — daily wages, no employer contract',
-              'Below-average account balance (₹8,500) — typical for daily-wage cashflow pattern',
+              '62% of transactions are cash-based — high cash dependency limits verifiable income trail',
             ],
             whats_bad: [
               'Limited credit mix — only unsecured credit exposure, no prior loan repayment history',
