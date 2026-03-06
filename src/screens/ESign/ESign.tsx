@@ -192,82 +192,84 @@ export const ESign = (): JSX.Element => {
       </header>
 
       <div className="px-6 py-6 max-w-7xl mx-auto">
-        {/* Modern Stepper */}
-        <div className="mb-8 overflow-x-auto">
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 min-w-[700px]">
-            <div className="flex items-start justify-between gap-2">
-              {workflowSteps.map((step, index) => (
-                <React.Fragment key={step.id}>
-                  <div className="flex flex-col items-center flex-1 min-w-0">
-                    {/* Step Circle */}
-                    <div className="relative">
-                      <div
-                        className={`w-12 h-12 rounded-full flex items-center justify-center text-base font-bold transition-all shadow-md ${
-                          index === currentStepIndex
-                            ? 'bg-gradient-to-br from-[#11287c] to-[#1e3a8a] text-white ring-4 ring-blue-200 scale-110'
-                            : index < currentStepIndex
-                            ? 'bg-gradient-to-br from-green-500 to-green-600 text-white'
-                            : 'bg-gray-200 text-gray-500'
-                        }`}
-                      >
-                        {index < currentStepIndex ? (
-                          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                          </svg>
-                        ) : (
-                          step.id
+        {/* Modern Stepper — hidden on intro screen */}
+        {currentStepIndex > 0 && (
+          <div className="mb-8 overflow-x-auto">
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 min-w-[700px]">
+              <div className="flex items-start justify-between gap-2">
+                {workflowSteps.map((step, index) => (
+                  <React.Fragment key={step.id}>
+                    <div className="flex flex-col items-center flex-1 min-w-0">
+                      {/* Step Circle */}
+                      <div className="relative">
+                        <div
+                          className={`w-12 h-12 rounded-full flex items-center justify-center text-base font-bold transition-all shadow-md ${
+                            index === currentStepIndex
+                              ? 'bg-gradient-to-br from-[#11287c] to-[#1e3a8a] text-white ring-4 ring-blue-200 scale-110'
+                              : index < currentStepIndex
+                              ? 'bg-gradient-to-br from-green-500 to-green-600 text-white'
+                              : 'bg-gray-200 text-gray-500'
+                          }`}
+                        >
+                          {index < currentStepIndex ? (
+                            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                            </svg>
+                          ) : (
+                            step.id
+                          )}
+                        </div>
+                        {/* Active indicator */}
+                        {index === currentStepIndex && (
+                          <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2">
+                            <div className="w-2 h-2 rounded-full bg-[#11287c] animate-pulse"></div>
+                          </div>
                         )}
                       </div>
-                      {/* Active indicator */}
-                      {index === currentStepIndex && (
-                        <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2">
-                          <div className="w-2 h-2 rounded-full bg-[#11287c] animate-pulse"></div>
-                        </div>
-                      )}
-                    </div>
-                    
-                    {/* Step Info */}
-                    <div className="mt-3 text-center px-1">
-                      <p className={`text-sm font-semibold leading-tight ${
-                        index === currentStepIndex 
-                          ? 'text-[#11287c]' 
-                          : index < currentStepIndex 
-                          ? 'text-green-700' 
-                          : 'text-gray-600'
-                      }`}>
-                        {step.title}
-                      </p>
-                      <p className={`text-xs mt-1 leading-tight ${
-                        index === currentStepIndex 
-                          ? 'text-gray-700' 
-                          : 'text-gray-500'
-                      }`}>
-                        {step.description}
-                      </p>
-                    </div>
-                  </div>
-                  
-                  {/* Connector Line */}
-                  {index < workflowSteps.length - 1 && (
-                    <div className="flex items-center" style={{ marginTop: '24px' }}>
-                      <div className="relative h-1 w-8 lg:w-12">
-                        <div className="absolute inset-0 bg-gray-200 rounded-full"></div>
-                        <div 
-                          className={`absolute inset-0 rounded-full transition-all duration-500 ${
-                            index < currentStepIndex ? 'bg-gradient-to-r from-green-500 to-green-600' : 'bg-gray-200'
-                          }`}
-                          style={{
-                            width: index < currentStepIndex ? '100%' : '0%'
-                          }}
-                        ></div>
+
+                      {/* Step Info */}
+                      <div className="mt-3 text-center px-1">
+                        <p className={`text-sm font-semibold leading-tight ${
+                          index === currentStepIndex
+                            ? 'text-[#11287c]'
+                            : index < currentStepIndex
+                            ? 'text-green-700'
+                            : 'text-gray-600'
+                        }`}>
+                          {step.title}
+                        </p>
+                        <p className={`text-xs mt-1 leading-tight ${
+                          index === currentStepIndex
+                            ? 'text-gray-700'
+                            : 'text-gray-500'
+                        }`}>
+                          {step.description}
+                        </p>
                       </div>
                     </div>
-                  )}
-                </React.Fragment>
-              ))}
+
+                    {/* Connector Line */}
+                    {index < workflowSteps.length - 1 && (
+                      <div className="flex items-center" style={{ marginTop: '24px' }}>
+                        <div className="relative h-1 w-8 lg:w-12">
+                          <div className="absolute inset-0 bg-gray-200 rounded-full"></div>
+                          <div
+                            className={`absolute inset-0 rounded-full transition-all duration-500 ${
+                              index < currentStepIndex ? 'bg-gradient-to-r from-green-500 to-green-600' : 'bg-gray-200'
+                            }`}
+                            style={{
+                              width: index < currentStepIndex ? '100%' : '0%'
+                            }}
+                          ></div>
+                        </div>
+                      </div>
+                    )}
+                  </React.Fragment>
+                ))}
+              </div>
             </div>
           </div>
-        </div>
+        )}
 
         <div className="bg-gray-50 rounded-lg p-6 min-h-[400px]">
           {currentStep.key === 'intro' && (
