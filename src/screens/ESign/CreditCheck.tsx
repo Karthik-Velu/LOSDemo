@@ -531,7 +531,7 @@ export const CreditCheck: React.FC<CreditCheckProps> = ({
             ],
             needs_improvement: [
               'Attendance-linked monthly wages — income varies with days present (formal muster roll employment)',
-              '62% of transactions are cash-based — high cash dependency limits verifiable income trail',
+              'Income mostly via direct account transfer; expenses largely cash-based — limits verifiable expense trail',
             ],
             whats_bad: [
               'Limited credit mix — only unsecured credit exposure, no prior loan repayment history',
@@ -1507,7 +1507,6 @@ export const CreditCheck: React.FC<CreditCheckProps> = ({
               <ul className="text-xs space-y-1">
                 {scenario === 'young_professional' && (
                   <>
-                    <li className="text-yellow-800">• Fragmented deposit pattern — daily credits, not a single monthly credit</li>
                     <li className="text-yellow-800">• Income variability month-to-month (±15%)</li>
                     <li className="text-yellow-800">• Below-average account balance (₹8,500)</li>
                   </>
