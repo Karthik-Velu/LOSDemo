@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Ki Originate — Demo Script</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: Georgia, 'Times New Roman', serif;
+      font-size: 18px;
+      line-height: 1.75;
+      color: #111;
+      background: #fff;
+      max-width: 700px;
+      margin: 0 auto;
+      padding: 40px 28px 80px;
+    }
+
+    h1 {
+      font-size: 22px;
+      font-weight: bold;
+      text-align: center;
+      color: #11287c;
+      margin-bottom: 6px;
+      letter-spacing: 0.5px;
+    }
+
+    .subtitle {
+      text-align: center;
+      font-size: 14px;
+      color: #666;
+      margin-bottom: 48px;
+      font-style: italic;
+    }
+
+    h2 {
+      font-size: 13px;
+      font-weight: bold;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      color: #11287c;
+      border-bottom: 2px solid #11287c;
+      padding-bottom: 6px;
+      margin-top: 48px;
+      margin-bottom: 20px;
+    }
+
+    .timing {
+      font-size: 13px;
+      color: #888;
+      font-style: italic;
+      margin-bottom: 18px;
+    }
+
+    p {
+      margin-bottom: 18px;
+    }
+
+    @media print {
+      body { padding: 20px 24px 40px; font-size: 16px; }
+      h2 { page-break-before: auto; }
+    }
+
+    @media (max-width: 480px) {
+      body { font-size: 17px; padding: 24px 20px 60px; }
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Ki Originate — Demo Script</h1>
+  <p class="subtitle">Urban factory worker use case &nbsp;·&nbsp; 5 minutes</p>
+
+  <!-- ─────────────────────────────────────────────────── -->
+
+  <h2>Section 1 — Opening</h2>
+  <p class="timing">0:00 – 0:45 &nbsp;·&nbsp; Landing page</p>
+
+  <p>Let me jump straight into the demo. What you're looking at is Ki Originate — Kaleidofin's loan origination system — and it integrates natively with Ki Score, Kaleidofin's credit and fraud scoring engine. That integration is what makes the whole thing work as one seamless flow.</p>
+
+  <p>One important point to hold in mind: the kind of experience we're about to show — quick decisioning, straight-through processing, e-sign, direct disbursement — has historically been available only to the white-collar formal sector. With Ki Originate and Ki Score, we bring that same experience to the informal sector. Ki Score is specifically engineered as a score for informal segments. It incorporates alternate data to solve the thin-file problem — so that good borrowers are not turned away simply because they don't have a long bureau history or a formal salary slip.</p>
+
+  <p>Today I'm walking you through exactly that: a young professional working on the factory floor of an auto components manufacturer in Pune, on attendance-linked monthly pay. He has a thin bureau file, most of his expenses are cash, and his income varies slightly from month to month depending on attendance. Precisely the kind of borrower who gets declined by conventional systems — not because he isn't creditworthy, but because those systems can't see enough of him. We're going to show you how Ki Score, through alternate data, changes that. Let me start.</p>
+
+  <!-- ─────────────────────────────────────────────────── -->
+
+  <h2>Section 2 — Lead Registration</h2>
+  <p class="timing">0:45 – 1:00 &nbsp;·&nbsp; Step 1 — Lead Registration</p>
+
+  <p>Step one is lead registration. The loan officer opens the Ki Originate LOS and starts capturing the applicant's details. I'm selecting the profile we're showcasing — you can see it described as: auto components factory worker, attendance-linked pay, Pune. The applicant is Kiran Desai. We collect the basic personal and employment details and the requested loan amount — forty-five thousand rupees. Once that's captured, we move forward.</p>
+
+  <h2>Section 2 — Data Consent</h2>
+  <p class="timing">1:00 – 1:30 &nbsp;·&nbsp; Step 2 — Data Consent</p>
+
+  <p>Before we run any checks, we get the borrower's explicit consent via OTP to pull two things: their credit bureau data and their bank statement. This is the data that feeds into every subsequent decision — fraud, credit, everything. It happens once, here, and then both assessments draw from the same pool. OTP verified — let's proceed to KYC.</p>
+
+  <!-- ─────────────────────────────────────────────────── -->
+
+  <h2>Section 3 — KYC &amp; Fraud Check</h2>
+  <p class="timing">1:30 – 2:15 &nbsp;·&nbsp; Step 3 — KYC &amp; Fraud Check</p>
+
+  <p>This is where the first major decision point sits: KYC and fraud assessment. Kaleidofin runs a thorough check — document verification, identity matching across multiple data sources, digital footprint analysis, and a review of transaction patterns. The output is a fraud score, which in this case is 33 — so we're in the medium risk band, not high.</p>
+
+  <p>The areas to watch are exactly what you'd expect for this profile: it's his first application to this lender, and there's a high proportion of cash transactions in his account — which limits how much we can see on the expense side. Those are flagged. But look at what the positive factors say: identity matches cleanly across every data source, no adverse media, and his digital footprint is stable — he's had the same mobile number for six years and the same email for four. That's meaningful signal for someone who doesn't have a long credit file. The system puts all of this together and the conclusion is clear: from a fraud perspective, this borrower is legitimate. The underwriter can proceed with confidence to credit assessment.</p>
+
+  <!-- ─────────────────────────────────────────────────── -->
+
+  <h2>Section 4 — Credit Assessment &amp; Alternate Data</h2>
+  <p class="timing">2:15 – 3:45 &nbsp;·&nbsp; Step 4 — Credit Assessment</p>
+
+  <p>Because bureau consent was already taken, credit assessment starts immediately. The Ki Score engine draws on bureau data, bank statement, the application itself, and an internal alternate data database — all four sources, in combination. Ki Score is specifically built for informal segments: it's engineered to incorporate alternate data so that we can score borrowers who would otherwise be thin file — limited bureau history, cash-heavy expenses, attendance-linked or irregular income. That's what makes a fair and accurate decision possible for someone like Kiran.</p>
+
+  <p>Here is the Ki Score summary. Kiran's Ki Score is 38 — solidly in the Good band. He requested forty-five thousand; we're recommending forty-three thousand as the eligible amount, based on his disposable income and everything else we've assessed. The recommended term is twelve months at thirteen percent APR. Every one of these numbers comes directly from the Ki Score engine, not from a manual underwriter estimate. And critically — you also get full model explainability right here on the same page: why he was approved, what the positive factors are, what to watch, and what the risk factors are. There is no black box.</p>
+
+  <p>Let me take you through what the model is seeing. On the income side, the bank statement shows attendance-linked monthly wages from the factory — consistently in the range of fourteen to seventeen thousand rupees. It's not a fixed salary; it moves with his attendance. There's also a recurring two thousand five hundred or so from odd jobs and delivery work each month. Total income lands between fourteen and seventeen and a half thousand. On the expense side, it's heavily cash — we cannot establish individual expense lines, so a portion is classified as other debits. That's an area to watch. But the debt-service ratio is very low: 4.3% DTI, driven only by a small BNPL and digital credit repayment. No major loans. And despite a thin file, he has three years of clean credit history through digital credit lines — 96% on-time payments, never missed. That's a positive.</p>
+
+  <p>Now — the alternate data. This is how Ki Score solves for the thin-file problem in the informal segment. For this borrower, we're not just looking at him in isolation; we're looking at the environment around him. First panel: borrower default propensity for similar cohorts in this geography. PAR-30 for comparable profiles is 4.2%. Default rate for informal wage workers in the area is 3.8%. Median leverage is 1.4 times annual income — and given his 4.3% DTI, he's well below that, which means there is meaningful headroom. Bounce rate for similar ticket sizes is 6.1%, and the on-time payment trend is improving year on year. Second panel: the pincode development index — infrastructure quality for PIN 411026 is above the district average. Third panel: general geographic economic activity in Pimpri-Chinchwad — strong, with positive employment growth and a high-density commercial zone. Fourth panel: occupation-specific activity — manufacturing and auto components, within five kilometres of his address — growing, with sector employment trending upward.</p>
+
+  <p>Put all of that together: a borrower who looks thin on paper is surrounded by strong economic signals. The alternate data interacts with every other data point and gives the model enough context to make a confident call. The outcome: auto-approved, forty-three thousand rupees, twelve months, thirteen percent APR.</p>
+
+  <!-- ─────────────────────────────────────────────────── -->
+
+  <h2>Section 5 — Disbursement</h2>
+  <p class="timing">3:45 – 5:00 &nbsp;·&nbsp; Step 5 — Disbursement</p>
+
+  <p>We approve the loan. At this point Ki Originate does two more things that matter operationally. First: penny-drop validation — the system verifies the borrower's primary bank account before a single rupee moves. Second: e-sign — the loan agreement is signed electronically, within the same flow. For the demo we've kept the agreement simple, but in production this integrates directly with e-sign providers, so no branch visit, no wet signature, no courier.</p>
+
+  <p>And then disbursement. Forty-three thousand rupees, transferred directly. The entire journey — application, consent, fraud check, credit decision, e-sign, penny-drop, payout — completed in minutes. That's what straight-through processing looks like when the intelligence is embedded in the system. Ki Score handles the decision; the human handles the exception. Back-and-forth between lender and borrower is eliminated.</p>
+
+  <p>Kiran Desai has his loan. He would have been declined by a conventional system for having a thin file. He wasn't thin file — he was just invisible to the wrong kind of lens. What we've shown you is the same experience that has until now been reserved for the white-collar formal sector — quick decisioning, straight-through processing, e-sign, penny-drop, direct disbursement — delivered to the informal sector through Ki Score, which is engineered for exactly these segments and uses alternate data to solve the thin-file problem. That's the Ki Originate story. I'll hand it over now and we can open it up for questions. Thank you.</p>
+
+</body>
+</html>
