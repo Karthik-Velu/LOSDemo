@@ -192,10 +192,10 @@ export const ESign = (): JSX.Element => {
             <div className="flex items-center gap-4">
               <button
                 onClick={() => {
-                  if (confirm('Clear all data and start fresh demo?')) {
-                    localStorage.removeItem('mock_loan_applications');
-                    window.location.reload();
-                  }
+                  localStorage.removeItem('mock_loan_applications');
+                  setApplication(null);
+                  setCurrentStepIndex(0);
+                  window.location.reload();
                 }}
                 className="text-sm bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded transition"
               >

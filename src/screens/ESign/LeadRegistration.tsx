@@ -77,15 +77,15 @@ export const LeadRegistration: React.FC<LeadRegistrationProps> = ({
       color: 'amber',
       region: 'africa',
       data: {
-        applicant_name: 'James Mwangi',
+        applicant_name: 'Daniel Mutiso',
         applicant_phone: '+254 712 345 678',
-        applicant_email: 'james.mwangi@email.com',
+        applicant_email: 'daniel.mutiso@email.com',
         applicant_address: 'Kithimani Village, Yatta Sub-County, Machakos County, Kenya',
         applicant_pan: 'A012345678B',
         applicant_aadhaar: '28456123',
-        coapplicant_name: 'Grace Wanjiku',
+        coapplicant_name: 'Mary Ndinda',
         coapplicant_phone: '+254 723 456 789',
-        coapplicant_email: 'grace.wanjiku@email.com',
+        coapplicant_email: 'mary.ndinda@email.com',
         coapplicant_address: 'Kithimani Village, Yatta Sub-County, Machakos County, Kenya',
         coapplicant_pan: 'A098765432C',
         coapplicant_aadhaar: '29123456',
@@ -284,7 +284,7 @@ export const LeadRegistration: React.FC<LeadRegistrationProps> = ({
       const updateData = {
         ...formData,
         requested_amount: formData.requested_amount ? parseFloat(formData.requested_amount as string) : undefined,
-        status: 'in_progress',
+        status: 'in_progress' as const,
         demo_scenario_id: (formData as any).demo_scenario_id,
       };
       console.log('Lead Registration - Saving with demo_scenario_id:', updateData.demo_scenario_id);
@@ -568,7 +568,7 @@ export const LeadRegistration: React.FC<LeadRegistrationProps> = ({
             disabled={saving}
             className="bg-[#11287c] hover:bg-[#1e3a8a] text-white px-8 py-2 w-full sm:w-auto"
           >
-            {saving ? 'Saving...' : 'Save & Continue to KYC'}
+            {saving ? 'Saving...' : currentScenarioId === 'africa_agri_alt_only' ? 'Save & Continue to Farm Profile' : 'Save & Continue to KYC'}
           </Button>
         </div>
       </form>

@@ -627,7 +627,16 @@ export const CreditCheck: React.FC<CreditCheckProps> = ({
           },
       available_bank_accounts: [
         ...(isAfricaAltOnly
-          ? []
+          ? [
+              {
+                id: 'acc_1',
+                bank_name: 'Yatta SACCO Society Ltd',
+                account_number: '0082-001-45678',
+                ifsc_code: 'YATT-KE-008',
+                account_type: 'Savings',
+                balance: 12400,
+              },
+            ]
           : isAfricaEnhanced
           ? [
               {
@@ -748,21 +757,20 @@ export const CreditCheck: React.FC<CreditCheckProps> = ({
         : scenario === 'africa_agri_alt_only'
         ? {
             whats_good: [
-              'Highland-adjacent zone with moderate rainfall stability',
-              'Maize cultivation on 1.5 acres — viable subsistence-plus acreage',
-              'Irrigation access reduces full crop-failure risk',
-              'Socioeconomic context (GRDI) indicates moderate rural development',
-              'Productive-use loan purpose aligned with seasonal input cycle',
+              'Borehole irrigation (1.2 km) compensates for −12% rainfall deficit — viable maize & beans cultivation despite below-average rainfall',
+              'Intercropping maize & beans provides nitrogen fixation, reducing input costs and diversifying harvest income across two staggered cycles (beans Jun–Jul, maize Jul–Aug)',
+              'Farm ownership (1.5 acres, owned) provides tenure security — no lease-expiry risk during the 12-month repayment term',
+              'Sub-national HDI (0.52) and female empowerment index (0.61) indicate a community with moderate economic activity and social stability',
+              'Productive-use loan purpose aligned with seasonal input cycle — fertiliser and seed purchase timed to March long-rains planting',
             ],
             needs_improvement: [
-              'Rainfall deficit of 15% in prior long-rains season — elevated input cost risk',
-              'Sandy loam soil with moderate water retention — sensitive to prolonged dry spells',
-              'Seasonal income concentration around one annual harvest cycle',
-              'Market access via seasonal road — collection risk in wet months',
+              '3-year declining rainfall trend in lowland transition zone — borehole access critical; 500L tank capacity may need monitoring during extended dry spells',
+              'Income concentration: ~60% arrives Jul–Aug from long-rains harvest — lean months Mar–Jun require lower repayment amounts',
+              'Short-rains harvest (Jan–Feb) carries higher climate risk than long-rains — beans provide partial buffer but maize yields may be reduced',
             ],
             whats_bad: [
-              'Elevated drought exposure in lowland transition zone (SPEI -0.8)',
-              'Single-crop maize dependency with no secondary income buffer',
+              'Coarse soil fragments (18%) with moderate water retention — extended dry spells beyond 3 weeks could stress maize yields despite irrigation',
+              'No formal transaction history (bank or M-Pesa) — creditworthiness assessed entirely via alternate signals',
             ],
           }
         : scenario === 'africa_agri_enhanced'
@@ -1123,22 +1131,40 @@ export const CreditCheck: React.FC<CreditCheckProps> = ({
             <div className="mt-4 p-4 bg-gradient-to-r from-orange-50 to-amber-50 rounded-lg border border-orange-200">
               <div className="flex items-start gap-3">
                 <div className="flex-shrink-0 w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center">
-                  <span className="text-xl">🌍</span>
+                  <span className="text-xl">📅</span>
                 </div>
                 <div className="flex-1">
-                  <h4 className="font-bold text-orange-900 mb-2">Climate & Farm-Based Underwriting</h4>
-                  <p className="text-sm text-orange-800 mb-2">
-                    Ki Score is derived from farm-level alternate data signals, enabling a credit decision without requiring bureau history or bank statements:
+                  <h4 className="font-bold text-orange-900 mb-2">Harvest-Aligned Repayment Schedule</h4>
+                  <p className="text-sm text-orange-800 mb-3">
+                    Repayment is structured around maize & beans harvest windows in Machakos County. Smaller amounts during planting and growing months; larger installments after expected harvest when cash is available.
                   </p>
-                  <ul className="text-sm text-orange-800 space-y-1 ml-4">
-                    <li>• <strong>Climate & soil analysis</strong> — moderate drought exposure offset by borehole irrigation</li>
-                    <li>• <strong>Farm profile</strong> — 1.5 acres maize, viable subsistence-plus acreage</li>
-                    <li>• <strong>Socioeconomic context</strong> — GRDI 0.48 indicates moderate rural development</li>
-                    <li>• <strong>Income estimated from crop-yield models</strong> — KES 18,000–25,000/month</li>
-                    <li>• <strong>12-month term</strong> aligned with single seasonal input cycle</li>
-                  </ul>
-                  <p className="text-xs text-orange-700 mt-2 italic">
-                    18% APR — formal institutional credit structured for seasonal repayment. Comparable informal lending in this region typically carries rates of 40–80%+.
+                  <div className="grid grid-cols-12 gap-0.5 mb-3">
+                    {['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'].map((m, i) => {
+                      const isPostHarvest = [0,1,6,7].includes(i);
+                      return (
+                        <div key={m} className="text-center">
+                          <div className={`rounded-t text-[10px] font-bold py-1 ${isPostHarvest ? 'bg-green-200 text-green-900' : 'bg-orange-200 text-orange-900'}`}>
+                            {isPostHarvest ? '13K' : '6.5K'}
+                          </div>
+                          <div className={`rounded-b text-[9px] py-0.5 ${isPostHarvest ? 'bg-green-100 text-green-800' : 'bg-orange-100 text-orange-800'}`}>
+                            {m}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <div className="flex gap-4 text-xs mb-2">
+                    <div className="flex items-center gap-1.5">
+                      <div className="w-3 h-3 rounded bg-orange-200"></div>
+                      <span className="text-orange-800">Planting / growing (lean) — KES 6,500</span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <div className="w-3 h-3 rounded bg-green-200"></div>
+                      <span className="text-green-800">Post-harvest — KES 13,000</span>
+                    </div>
+                  </div>
+                  <p className="text-xs text-orange-700 italic">
+                    Long rains (Mar–Jun) → harvest Jul–Aug · Short rains (Oct–Dec) → harvest Jan–Feb · 18% APR · 12-month term · Total ~KES 117,000.
                   </p>
                 </div>
               </div>
@@ -1171,6 +1197,7 @@ export const CreditCheck: React.FC<CreditCheckProps> = ({
           )}
         </div>
 
+        {!isAfricaAltOnly && (
         <div className="bg-white p-6 rounded-lg shadow-sm">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">Reasons for this Decision</h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -1200,6 +1227,7 @@ export const CreditCheck: React.FC<CreditCheckProps> = ({
             </div>
           </div>
         </div>
+        )}
 
         {!isAfricaAltOnly && (
         <div className="bg-white p-6 rounded-lg shadow-sm">
@@ -1502,57 +1530,114 @@ export const CreditCheck: React.FC<CreditCheckProps> = ({
             </p>
           </div>
 
-          {/* Data Sources panel — Africa alt-only */}
+          {/* 14 Selected Variables — Africa alt-only */}
           {isAfricaAltOnly && (
-            <div className="mb-6 p-4 bg-gray-50 border border-gray-200 rounded-lg">
-              <h4 className="text-sm font-semibold text-gray-900 mb-3">Data Sources Used in This Assessment</h4>
-              <div className="overflow-x-auto">
-                <table className="w-full text-xs">
-                  <thead>
-                    <tr className="text-left text-gray-500 border-b border-gray-200">
-                      <th className="pb-2 pr-4 font-semibold">Source</th>
-                      <th className="pb-2 pr-4 font-semibold">Resolution</th>
-                      <th className="pb-2 font-semibold">Role in Assessment</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-100">
-                    <tr>
-                      <td className="py-1.5 pr-4 font-medium text-gray-800">CHIRPS v2</td>
-                      <td className="py-1.5 pr-4 text-gray-600">5km / Monthly</td>
-                      <td className="py-1.5 text-gray-600">Rainfall patterns, precipitation anomaly vs 10-year baseline</td>
-                    </tr>
-                    <tr>
-                      <td className="py-1.5 pr-4 font-medium text-gray-800">ERA5-Land</td>
-                      <td className="py-1.5 pr-4 text-gray-600">9km / Hourly</td>
-                      <td className="py-1.5 text-gray-600">Temperature, surface runoff, heat stress signals</td>
-                    </tr>
-                    <tr>
-                      <td className="py-1.5 pr-4 font-medium text-gray-800">SPEI Index</td>
-                      <td className="py-1.5 pr-4 text-gray-600">55km / Monthly</td>
-                      <td className="py-1.5 text-gray-600">Drought severity index (1–48 month scales)</td>
-                    </tr>
-                    <tr>
-                      <td className="py-1.5 pr-4 font-medium text-gray-800">SoilGrids</td>
-                      <td className="py-1.5 pr-4 text-gray-600">250m</td>
-                      <td className="py-1.5 text-gray-600">Soil composition, drainage, water retention capacity</td>
-                    </tr>
-                    <tr>
-                      <td className="py-1.5 pr-4 font-medium text-gray-800">CIAT / GRDI</td>
-                      <td className="py-1.5 pr-4 text-gray-600">10km</td>
-                      <td className="py-1.5 text-gray-600">Rural deprivation index, socioeconomic vulnerability</td>
-                    </tr>
-                    <tr>
-                      <td className="py-1.5 pr-4 font-medium text-gray-800">Farm Profile</td>
-                      <td className="py-1.5 pr-4 text-gray-600">Point-level GPS</td>
-                      <td className="py-1.5 text-gray-600">Crop type, acreage, irrigation practice, land tenure</td>
-                    </tr>
-                  </tbody>
-                </table>
+            <div className="mb-6 p-5 bg-gradient-to-br from-slate-50 to-gray-50 border border-gray-200 rounded-xl">
+              <h4 className="text-base font-bold text-gray-900 mb-1">Risk-Predictive Variables</h4>
+              <p className="text-xs text-gray-500 mb-4">Farm characteristics, demographics, and area-level climate & soil signals used to generate the Ki Score</p>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {/* Farm & Loan Details */}
+                <div>
+                  <div className="flex items-center gap-2 mb-3 px-3 py-2 bg-[#1a3a5c] rounded-t-lg">
+                    <span className="text-sm">🧑‍🌾</span>
+                    <span className="text-xs font-semibold text-white">Farm & Loan Details</span>
+                    <span className="ml-auto text-[10px] bg-teal-400/20 text-teal-200 px-1.5 py-0.5 rounded">From this application</span>
+                  </div>
+                  <div className="space-y-0 border border-gray-200 border-t-0 rounded-b-lg overflow-hidden">
+                    {[
+                      { label: 'Current Water Source Used', value: 'Borehole', why: 'Well, river, etc.' },
+                      { label: 'Water Tank Capacity', value: '500 litres', why: 'Storage capacity proxy for water security' },
+                      { label: 'Distance to Water Source', value: '1.2 km', why: 'Access difficulty — proxy for irrigation burden' },
+                      { label: 'Ownership of Farm', value: 'Owned (1.5 acres)', why: 'Owned vs rented/leased — tenure security' },
+                      { label: 'Crops Grown', value: 'Maize & beans (intercrop)', why: 'Categorical — 20+ crop types' },
+                      { label: 'Requested Loan Amount', value: 'KES 100,000', why: 'Loan size' },
+                    ].map((item, i) => (
+                      <div key={i} className="px-3 py-2.5 border-b border-gray-100 last:border-b-0">
+                        <p className="text-xs font-semibold text-gray-900">{item.label}</p>
+                        <p className="text-xs text-gray-700 font-medium">{item.value}</p>
+                        <p className="text-[10px] text-gray-400 italic">{item.why}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                {/* Demographic & Socioeconomic */}
+                <div>
+                  <div className="flex items-center gap-2 mb-3 px-3 py-2 bg-[#2d6a4f] rounded-t-lg">
+                    <span className="text-sm">📊</span>
+                    <span className="text-xs font-semibold text-white">Demographic & Socioeconomic</span>
+                    <span className="ml-auto text-[10px] bg-teal-400/20 text-teal-200 px-1.5 py-0.5 rounded">Mixed sources</span>
+                  </div>
+                  <div className="space-y-0 border border-gray-200 border-t-0 rounded-b-lg overflow-hidden">
+                    {[
+                      { label: 'Age', value: '42 years', why: "Farmer's age in years — top feature by gain", badge: '🧑‍🌾 Individual' },
+                      { label: 'Sub-National HDI Score', value: '0.52', why: 'Human development index — proxy for regional living standards', badge: '🌍 Area-level' },
+                      { label: 'Female Empowerment Index', value: '0.61', why: "Gender empowerment score for the farmer's region", badge: '🌍 Area-level' },
+                      { label: 'Global Gridded Rural Deprivation Index (GRDI)', value: '42.3', why: 'Composite index of rural poverty and infrastructure access', badge: '🌍 Area-level' },
+                    ].map((item, i) => (
+                      <div key={i} className="px-3 py-2.5 border-b border-gray-100 last:border-b-0">
+                        <div className="flex items-center justify-between">
+                          <p className="text-xs font-semibold text-gray-900">{item.label}</p>
+                          <span className={`text-[9px] px-1.5 py-0.5 rounded font-medium ${item.badge.includes('Area') ? 'bg-blue-100 text-blue-700' : 'bg-teal-100 text-teal-700'}`}>{item.badge}</span>
+                        </div>
+                        <p className="text-xs text-gray-700 font-medium">{item.value}</p>
+                        <p className="text-[10px] text-gray-400 italic">{item.why}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                {/* Climate & Soil */}
+                <div>
+                  <div className="flex items-center gap-2 mb-3 px-3 py-2 bg-[#1a5276] rounded-t-lg">
+                    <span className="text-sm">🌍</span>
+                    <span className="text-xs font-semibold text-white">Climate & Soil</span>
+                    <span className="ml-auto text-[10px] bg-blue-400/20 text-blue-200 px-1.5 py-0.5 rounded">Area & climate context</span>
+                  </div>
+                  <div className="space-y-0 border border-gray-200 border-t-0 rounded-b-lg overflow-hidden">
+                    {[
+                      { label: '10-yr Mean Temperature', value: '20.1°C', why: 'Long-run average temperature — captures structural climate zone' },
+                      { label: 'Rainfall Deviation from 10-yr Mean', value: '−12%', why: 'Current season rainfall vs. historical baseline — drought/flood signal' },
+                      { label: '3-year Rainfall Trend', value: 'Declining', why: 'Direction and magnitude of rainfall change over recent years' },
+                      { label: 'Coarse Fragment Volume (soil)', value: '18%', why: 'Rock/gravel content in topsoil — affects water retention and root penetration' },
+                    ].map((item, i) => (
+                      <div key={i} className="px-3 py-2.5 border-b border-gray-100 last:border-b-0">
+                        <p className="text-xs font-semibold text-gray-900">{item.label}</p>
+                        <p className="text-xs text-gray-700 font-medium">{item.value}</p>
+                        <p className="text-[10px] text-gray-400 italic">{item.why}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
               </div>
+              {/* Key Insights Section */}
+              <div className="mt-5 p-4 bg-white/60 border border-gray-200 rounded-lg">
+                <h4 className="text-sm font-bold text-gray-900 mb-3">Key Insights (cross-variable)</h4>
+                <ul className="space-y-2 text-xs">
+                  {decision?.whats_good?.map((item: string, i: number) => (
+                    <li key={`good-${i}`} className="flex items-start gap-2">
+                      <span className="shrink-0 mt-0.5">✅</span>
+                      <span className="text-gray-800 font-medium">{item}</span>
+                    </li>
+                  ))}
+                  {decision?.needs_improvement?.map((item: string, i: number) => (
+                    <li key={`warn-${i}`} className="flex items-start gap-2">
+                      <span className="shrink-0 mt-0.5">⚠️</span>
+                      <span className="text-gray-800 font-medium">{item}</span>
+                    </li>
+                  ))}
+                  {decision?.whats_bad?.map((item: string, i: number) => (
+                    <li key={`bad-${i}`} className="flex items-start gap-2">
+                      <span className="shrink-0 mt-0.5">❌</span>
+                      <span className="text-gray-800 font-medium">{item}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+              <p className="text-[10px] text-gray-400 mt-3 italic">Technical sources: ERA5 · CHIRPS · SoilGrids · GRDI · Sub-national HDI</p>
             </div>
           )}
 
           {/* Alternate Data Assessment Factors */}
+          {!isAfricaAltOnly && (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
             <div className="bg-green-50 border border-green-200 rounded-lg p-4">
               <h4 className="text-sm font-semibold text-green-900 mb-2">Positive Factors</h4>
@@ -1657,9 +1742,10 @@ export const CreditCheck: React.FC<CreditCheckProps> = ({
               </ul>
             </div>
           </div>
+          )}
 
           {/* young_professional: 4-panel 2x2 grid */}
-          {scenario === 'young_professional' ? (
+          {isAfricaAltOnly ? null : scenario === 'young_professional' ? (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 
               {/* Panel 1: Area Default Propensity */}
@@ -2122,6 +2208,7 @@ export const CreditCheck: React.FC<CreditCheckProps> = ({
             </div>
           )}
 
+          {typeof isAfricaAltOnly !== 'undefined' && !isAfricaAltOnly && (
           <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="bg-green-50 border border-green-200 p-4 rounded-lg">
               <div className="flex items-center gap-2 mb-3">
@@ -2167,6 +2254,7 @@ export const CreditCheck: React.FC<CreditCheckProps> = ({
               </p>
             </div>
           </div>
+          )}
         </div>
 
         {!isAfricaAltOnly && (

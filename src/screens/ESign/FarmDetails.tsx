@@ -11,13 +11,14 @@ interface FarmDetailsProps {
 }
 
 const defaultFarmData = {
-  crop_type: 'Maize',
+  crops_grown: 'Maize & beans (intercrop)',
   acreage: '1.5',
-  irrigation: 'Supplemental (borehole)',
-  gps_lat: '-1.4200',
-  gps_lng: '37.2500',
+  water_source: 'Borehole',
+  water_tank_capacity: '500 litres',
+  distance_to_water: '1.2 km',
+  ownership: 'Owned',
   agro_zone: 'Lowland transition — semi-arid',
-  land_tenure: 'Customary',
+  location: 'Kithimani Village, Yatta Sub-County, Machakos County',
 };
 
 export const FarmDetails: React.FC<FarmDetailsProps> = ({
@@ -29,11 +30,9 @@ export const FarmDetails: React.FC<FarmDetailsProps> = ({
   const [farmData, setFarmData] = useState(defaultFarmData);
   const [filling, setFilling] = useState(true);
   const [saving, setSaving] = useState(false);
-  const fillStarted = React.useRef(false);
 
   useEffect(() => {
-    if (fillStarted.current) return;
-    fillStarted.current = true;
+    setFilling(true);
     const timer = setTimeout(() => {
       setFilling(false);
     }, 2000);
@@ -48,13 +47,14 @@ export const FarmDetails: React.FC<FarmDetailsProps> = ({
   };
 
   const fields = [
-    { label: 'Crop Type', value: farmData.crop_type, key: 'crop_type' },
+    { label: 'Crops Grown', value: farmData.crops_grown, key: 'crops_grown' },
     { label: 'Acreage (acres)', value: farmData.acreage, key: 'acreage' },
-    { label: 'Irrigation Practice', value: farmData.irrigation, key: 'irrigation' },
-    { label: 'Farm Latitude', value: farmData.gps_lat, key: 'gps_lat' },
-    { label: 'Farm Longitude', value: farmData.gps_lng, key: 'gps_lng' },
+    { label: 'Current Water Source Used', value: farmData.water_source, key: 'water_source' },
+    { label: 'Water Tank Capacity', value: farmData.water_tank_capacity, key: 'water_tank_capacity' },
+    { label: 'Distance to Water Source', value: farmData.distance_to_water, key: 'distance_to_water' },
+    { label: 'Ownership of Farm', value: farmData.ownership, key: 'ownership' },
+    { label: 'Farm Location', value: farmData.location, key: 'location' },
     { label: 'Agro-Ecological Zone', value: farmData.agro_zone, key: 'agro_zone' },
-    { label: 'Land Tenure', value: farmData.land_tenure, key: 'land_tenure' },
   ];
 
   return (
@@ -62,7 +62,7 @@ export const FarmDetails: React.FC<FarmDetailsProps> = ({
       <StepNarration
         step={2}
         title="Farm & Crop Profile"
-        description="The loan officer captures the farmer's land and crop profile. These inputs — combined with climate, soil, and socioeconomic data extracted at the farm's GPS location — are sufficient for Ki Score to generate a credit decision without any bureau or transaction history."
+        description="The loan officer captures the farmer's land and crop profile during onboarding. Climate, soil, and socioeconomic context is then matched to the farm's village or coordinates as entered. Together with the individual profile, they provide Ki Score with enough signal to generate a credit decision without any bureau or transaction history."
         icon="🌱"
         color="green"
       />
@@ -71,7 +71,7 @@ export const FarmDetails: React.FC<FarmDetailsProps> = ({
         <p className="text-sm text-gray-600 mt-1">Capture farm-level inputs for alternate data assessment</p>
       </div>
 
-      <div className="bg-white p-6 rounded-lg shadow-sm max-w-2xl">
+      <div className="bg-white p-6 rounded-lg shadow-sm">
         {filling && (
           <div className="flex items-center gap-3 p-4 bg-blue-50 rounded-lg mb-4">
             <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
@@ -81,7 +81,7 @@ export const FarmDetails: React.FC<FarmDetailsProps> = ({
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {fields.map((field) => (
-            <div key={field.key} className={field.key === 'agro_zone' ? 'sm:col-span-2' : ''}>
+            <div key={field.key} className={field.key === 'agro_zone' || field.key === 'location' ? 'sm:col-span-2' : ''}>
               <label className="block text-sm font-medium text-gray-700 mb-1">{field.label}</label>
               <input
                 type="text"
@@ -95,7 +95,7 @@ export const FarmDetails: React.FC<FarmDetailsProps> = ({
 
         <div className="mt-6 p-4 bg-amber-50 border border-amber-200 rounded-lg">
           <p className="text-xs text-amber-800">
-            <strong>Data pipeline:</strong> Climate signals (CHIRPS rainfall, ERA5 temperature, SPEI drought index), soil characteristics (SoilGrids at 250m resolution), and socioeconomic context (CIAT/GRDI) are automatically extracted at the farm GPS coordinates and fused with the profile above for scoring.
+            <strong>How it works:</strong> Climate and soil context (rainfall patterns, temperature, soil properties) and socioeconomic indicators are matched to the farm's location. These area-level signals are combined with the individual farm profile above to generate a credit score — no bureau or transaction data needed.
           </p>
         </div>
 
