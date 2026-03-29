@@ -61,7 +61,7 @@ export const ESign = (): JSX.Element => {
       fraud_rejection: 'Fraud Rejection',
       bank_rejection: 'Credit Rejection',
       africa_agri_alt_only: 'Kenya Farmer (Alt Data)',
-      africa_agri_enhanced: 'Kenya Farmer (Enhanced)',
+      africa_agri_enhanced: 'Kenya Farmer (alternate data + Bureau)',
     };
     return scenarioId ? (labels[scenarioId] || scenarioId) : '';
   };

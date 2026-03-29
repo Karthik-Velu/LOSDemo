@@ -62,7 +62,7 @@ const africaScenarios = [
   },
   {
     id: 'africa_agri_enhanced',
-    name: "Kenya Farmer (Enhanced)",
+    name: "Kenya Farmer (alternate data + Bureau)",
     color: "emerald",
     icon: "🏦",
     description: "Coffee farmer in Nyeri County — same alternate data foundation, enhanced with credit bureau history and M-Pesa transaction data for stronger risk separation.",

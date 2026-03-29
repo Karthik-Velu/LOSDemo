@@ -28,6 +28,7 @@ export const LeadRegistration: React.FC<LeadRegistrationProps> = ({
     coapplicant_pan: application.coapplicant_pan || '',
     coapplicant_aadhaar: application.coapplicant_aadhaar || '',
     requested_amount: application.requested_amount || '',
+    demo_scenario_id: (application as any).demo_scenario_id || (application as any).demo_region === 'africa' ? 'africa_agri_alt_only' : undefined,
   });
   
 
@@ -94,7 +95,7 @@ export const LeadRegistration: React.FC<LeadRegistrationProps> = ({
     },
     {
       id: 'africa_agri_enhanced',
-      title: 'Kenya Farmer (Enhanced)',
+      title: 'Kenya Farmer (alternate data + Bureau)',
       description: 'Coffee farmer in Nyeri — alt data + bureau + M-Pesa transactions',
       color: 'emerald',
       region: 'africa',
