@@ -123,6 +123,14 @@ export const CreditCheck: React.FC<CreditCheckProps> = ({
   
   // Get scenario from application
   const scenario = (application as any).demo_scenario_id as string | undefined;
+  const isSriLankaFarmerScenario = scenario === 'sri_lanka_climate_farmer';
+  const isAfricaScenario = scenario === 'africa_agri_alt_only' || scenario === 'africa_agri_enhanced';
+  const isAfricaAltOnly = scenario === 'africa_agri_alt_only';
+  const isAfricaEnhanced = scenario === 'africa_agri_enhanced';
+  const currencyLocale = isAfricaScenario ? 'en-KE' : isSriLankaFarmerScenario ? 'en-LK' : 'en-IN';
+  const currencySymbol = isAfricaScenario ? 'KES ' : isSriLankaFarmerScenario ? 'LKR ' : '₹';
+  const minimumLoanAmount = isAfricaScenario ? 10000 : isSriLankaFarmerScenario ? 50000 : 5000;
+  const formatCurrency = (value?: number) => `${currencySymbol}${(value || 0).toLocaleString(currencyLocale)}`;
   
   // Interactive slider state
   const [selectedLoanAmount, setSelectedLoanAmount] = useState<number>(application.eligible_amount || 0);
@@ -153,6 +161,13 @@ export const CreditCheck: React.FC<CreditCheckProps> = ({
       // Keep APR within 12–14% band for young_professional
       // At minimum amount → 12%, at max eligible → 14%
       newAPR = 12 + (2 * (value / maxEligible));
+    } else if (currentScenario === 'sri_lanka_climate_farmer') {
+      // Keep Sri Lanka farmer within a competitive 13.5–15.5% band
+      newAPR = 13.5 + (2 * (value / maxEligible));
+    } else if (currentScenario === 'africa_agri_alt_only') {
+      newAPR = 16 + (4 * (value / maxEligible));
+    } else if (currentScenario === 'africa_agri_enhanced') {
+      newAPR = 12 + (4 * (value / maxEligible));
     } else {
       // Formula: APR = 16 + (5 * ((currentValue / maxEligible)))
       // Lower amount = lower risk = lower APR (16%)
@@ -217,6 +232,7 @@ export const CreditCheck: React.FC<CreditCheckProps> = ({
     // 61-80 = Poor (likely reject)
     // 81-100 = Very Poor (auto-reject)
     const scenario = (application as any).demo_scenario_id as string | undefined;
+    const isSriLankaFarmer = scenario === 'sri_lanka_climate_farmer';
     console.log('Credit Check - Scenario:', scenario);
     let kiScore: number;
     if (scenario === 'prime_customer') {
@@ -238,6 +254,12 @@ export const CreditCheck: React.FC<CreditCheckProps> = ({
       kiScore = 42; // Good - should be approved
     } else if (scenario === 'climate_adaptive') {
       kiScore = 44; // Good - approved with adaptive tenure
+    } else if (isSriLankaFarmer) {
+      kiScore = 41; // Good - approved with climate-adaptive structure
+    } else if (scenario === 'africa_agri_alt_only') {
+      kiScore = 44;
+    } else if (scenario === 'africa_agri_enhanced') {
+      kiScore = 35;
     } else {
       kiScore = Math.floor(Math.random() * 40) + 25;
     }
@@ -250,13 +272,28 @@ export const CreditCheck: React.FC<CreditCheckProps> = ({
       eligibleAmount = requestedAmount * 1.2; // 20% more than requested for low-risk customer
     } else if (scenario === 'young_professional') {
       eligibleAmount = 43000; // Slightly below requested ₹45,000 — reflects thin asset base
+    } else if (isSriLankaFarmer) {
+      eligibleAmount = 180000; // Slightly below requested amount due to climate-linked cashflow variability
+    } else if (scenario === 'africa_agri_alt_only') {
+      eligibleAmount = 85000;
+    } else if (scenario === 'africa_agri_enhanced') {
+      eligibleAmount = 150000;
     } else {
       eligibleAmount = requestedAmount * (kiScore > 50 ? 0.8 : 1.0);
     }
     
     // Adaptive tenure for climate scenario (longer tenure due to lower rainfall)
-    const isClimateScenario = scenario === 'climate_adaptive';
-    const adaptiveTerm = isClimateScenario ? 18 : 12; // 18 months for climate stress vs 12 normal
+    const isClimateScenario = scenario === 'climate_adaptive' || isSriLankaFarmer;
+    let adaptiveTerm: number;
+    if (isClimateScenario) {
+      adaptiveTerm = 18;
+    } else if (scenario === 'africa_agri_alt_only') {
+      adaptiveTerm = 12;
+    } else if (scenario === 'africa_agri_enhanced') {
+      adaptiveTerm = 18;
+    } else {
+      adaptiveTerm = 12;
+    }
     
     // Recommended amount is always the eligible amount (approved amount based on assessment)
     const recommendedAmount = eligibleAmount;
@@ -274,8 +311,14 @@ export const CreditCheck: React.FC<CreditCheckProps> = ({
     // Better scores (lower Ki Score) get better rates
     // young_professional gets a competitive 13% APR (within the 12–14% band)
     let calculatedAPR = 18; // Base APR
-    if (scenario === 'young_professional') {
+    if (scenario === 'africa_agri_alt_only') {
+      calculatedAPR = 18;
+    } else if (scenario === 'africa_agri_enhanced') {
+      calculatedAPR = 14;
+    } else if (scenario === 'young_professional') {
       calculatedAPR = 13; // 12–14% band — salaried, clean record, low debt
+    } else if (isSriLankaFarmer) {
+      calculatedAPR = 14; // Climate-adaptive agri borrower with good repayment capacity
     } else if (kiScore <= 25) {
       calculatedAPR = 16; // Excellent - best rate
     } else if (kiScore <= 45) {
@@ -344,6 +387,43 @@ export const CreditCheck: React.FC<CreditCheckProps> = ({
         total_balance: 95000,
         oldest_account: '36 months',
       };
+    } else if (isSriLankaFarmer) {
+      bureauData = {
+        credit_history_length: '2.5 years',
+        active_accounts: 2,
+        inquiries_180d: 2,
+        worst_dpd_12m: '1-30 DPD',
+        credit_utilization: '41%',
+        on_time_payment_rate: '91%',
+        secured_loans: 1,
+        unsecured_loans: 1,
+        total_balance: 135000,
+        oldest_account: '30 months',
+      };
+    } else if (scenario === 'africa_agri_alt_only') {
+      bureauData = {
+        credit_score: 0,
+        credit_history_length: 'No bureau record',
+        active_loans: 0,
+        total_outstanding: 0,
+        on_time_payment_rate: 'N/A',
+        utilization_rate: 'N/A',
+        recent_inquiries: 0,
+        delinquencies: 0,
+        dpd_status: 'N/A',
+      };
+    } else if (scenario === 'africa_agri_enhanced') {
+      bureauData = {
+        credit_score: 580,
+        credit_history_length: '2 years',
+        active_loans: 1,
+        total_outstanding: 45000,
+        on_time_payment_rate: '88%',
+        utilization_rate: '35%',
+        recent_inquiries: 1,
+        delinquencies: 1,
+        dpd_status: '30 DPD (1 episode, seasonal)',
+      };
     } else {
       // Default/other scenarios
       bureauData = {
@@ -371,31 +451,35 @@ export const CreditCheck: React.FC<CreditCheckProps> = ({
       bureau_data: bureauData,
       alternate_data: {
         socioeconomic: {
-          schools_nearby: 8,
-          hospitals_nearby: 3,
-          households_with_rcc_roofs: '65%',
-          car_ownership: '12%',
-          bank_branches_per_1000: 2.1,
-          local_crime_rate: 'Low',
+          ...(isSriLankaFarmer
+            ? {}
+            : {
+                schools_nearby: 8,
+                hospitals_nearby: 3,
+                households_with_rcc_roofs: '65%',
+                car_ownership: '12%',
+                bank_branches_per_1000: 2.1,
+                local_crime_rate: 'Low',
+              }),
         },
         climate_risk: {
-          rainfall_patterns: 'Normal',
-          drought_risk: 'Low',
-          flood_risk: 'Moderate',
-          climate_vulnerability: '3.2/10',
+          rainfall_patterns: isSriLankaFarmer ? 'Below long-term average' : 'Normal',
+          drought_risk: isSriLankaFarmer ? 'Moderate-High' : 'Low',
+          flood_risk: isSriLankaFarmer ? 'Low' : 'Moderate',
+          climate_vulnerability: isSriLankaFarmer ? '6.1/10' : '3.2/10',
         },
         digital_footprint: {
-          mobile_tenure: '6 years',
-          email_tenure: '4 years',
+          mobile_tenure: isSriLankaFarmer ? '7 years' : '6 years',
+          email_tenure: isSriLankaFarmer ? '5 years' : '4 years',
         },
         income_estimates: {
-          monthly_household_income: scenario === 'young_professional' ? 17500 : 36000,
-          monthly_debt_repayments: scenario === 'young_professional' ? 750 : 4200,
+          monthly_household_income: scenario === 'young_professional' ? 17500 : isSriLankaFarmer ? 125000 : 36000,
+          monthly_debt_repayments: scenario === 'young_professional' ? 750 : isSriLankaFarmer ? 9000 : 4200,
           drinking_water_access: 'Yes',
           toilet_access: 'Yes',
-          lpg_cooking: 'No',
-          scooter_ownership: 'No',
-          computer_ownership: 'No',
+          lpg_cooking: isSriLankaFarmer ? 'N/A' : 'No',
+          scooter_ownership: isSriLankaFarmer ? 'N/A' : 'No',
+          computer_ownership: isSriLankaFarmer ? 'N/A' : 'No',
           refrigerator_ownership: 'Yes',
         },
         ...(scenario === 'young_professional' && {
@@ -433,6 +517,46 @@ export const CreditCheck: React.FC<CreditCheckProps> = ({
             peer_cohort_approval_rate: '74%',
           },
         }),
+        ...(isSriLankaFarmer && {
+          climate_agri_signals: {
+            district: 'Anuradhapura dry zone',
+            crop_cycle: 'Paddy with harvest-linked cashflows (Maha / Yala)',
+            rainfall_deviation: '-17% vs 10-year average',
+            vegetation_stress: 'Elevated during current season',
+            irrigation_dependency: 'High',
+            crop_diversification: 'Paddy plus home-garden vegetables',
+          },
+          market_access_signals: {
+            nearest_collection_hub: 'Kekirawa paddy collection point',
+            road_access: 'All-weather secondary road connectivity',
+            buyer_network: 'Multiple local traders and millers within 20km',
+            repayment_alignment: 'Harvest-linked repayment windows feasible',
+          },
+        }),
+        ...(scenario === 'africa_agri_alt_only' && {
+          climate_risk_score: 62,
+          rainfall_trend: 'Below average — 15% deficit in prior long-rains season',
+          drought_severity: 'Moderate (SPEI -0.8, 6-month window)',
+          temperature_hazard: 'Low — within normal range for agro-ecological zone',
+          soil_profile: 'Sandy loam, moderate water retention, pH 6.2',
+          socioeconomic_index: 'GRDI 0.48 — moderate rural deprivation',
+          crop_type: 'Maize',
+          acreage: '1.5 acres',
+          irrigation: 'Supplemental (borehole)',
+          income_estimate: 'KES 18,000 – 25,000 monthly household income estimated from farm profile, crop yield models, and socioeconomic context',
+        }),
+        ...(scenario === 'africa_agri_enhanced' && {
+          climate_risk_score: 28,
+          rainfall_trend: 'Stable — within 5% of 10-year average',
+          drought_severity: 'Low (SPEI 0.3, near-normal)',
+          temperature_hazard: 'Low — highland zone, consistent temperatures',
+          soil_profile: 'Red laterite, good drainage, pH 5.8 (suitable for coffee)',
+          socioeconomic_index: 'GRDI 0.35 — above-average rural development',
+          crop_type: 'Coffee (Arabica)',
+          acreage: '2 acres',
+          irrigation: 'Rain-fed with shade cover',
+          income_estimate: 'KES 35,000 – 48,000 monthly household income from farm profile, M-Pesa cash flows, and buyer payment records',
+        }),
       },
       bank_statement_data: scenario === 'bank_rejection'
         ? {
@@ -462,6 +586,39 @@ export const CreditCheck: React.FC<CreditCheckProps> = ({
             outflows: { emi: 8500, utilities: 5200, other: 14000 },
             insights: { avg_balance: 24000, dti: '15.7%', stability: 'Moderate' },
           }
+        : isSriLankaFarmer
+        ? {
+            status: 'Good',
+            inflows: { agri: 95000, other: 30000 },
+            outflows: { emi: 9000, utilities: 18000, other: 52000 },
+            insights: { avg_balance: 46000, dti: '7.2%', stability: 'Moderate-High' },
+          }
+        : scenario === 'africa_agri_alt_only'
+        ? {
+            status: 'N/A',
+            average_monthly_inflow: 0,
+            average_monthly_outflow: 0,
+            monthly_household_income: 22000,
+            monthly_debt_repayments: 0,
+            average_balance: 0,
+            salary_detected: false,
+            inflow_sources: { farm_sales: 0, other: 0 },
+            dti_ratio: 0,
+            account_stability: 'N/A — no bank account on file',
+          }
+        : scenario === 'africa_agri_enhanced'
+        ? {
+            status: 'Good',
+            average_monthly_inflow: 38000,
+            average_monthly_outflow: 21000,
+            monthly_household_income: 42000,
+            monthly_debt_repayments: 5500,
+            average_balance: 28000,
+            salary_detected: false,
+            inflow_sources: { coffee_sales: 28000, mpesa_receipts: 10000 },
+            dti_ratio: 0.13,
+            account_stability: 'Stable — regular M-Pesa and bank activity',
+          }
         : {
             status: 'V Good',
             inflows: { agri: 28000, dairy: 8000 },
@@ -469,22 +626,56 @@ export const CreditCheck: React.FC<CreditCheckProps> = ({
             insights: { avg_balance: 12000, dti: '11.7%', stability: 'High' },
           },
       available_bank_accounts: [
-        {
-          id: 'acc_1',
-          bank_name: 'State Bank of India',
-          account_number: '1234567890123456',
-          ifsc_code: 'SBIN0001234',
-          account_type: 'Savings',
-          balance: 24500,
-        },
-        {
-          id: 'acc_2',
-          bank_name: 'HDFC Bank',
-          account_number: '9876543210987654',
-          ifsc_code: 'HDFC0005678',
-          account_type: 'Current',
-          balance: 15600,
-        }
+        ...(isAfricaAltOnly
+          ? []
+          : isAfricaEnhanced
+          ? [
+              {
+                id: 'acc_1',
+                bank_name: 'Equity Bank Kenya',
+                account_number: '0140298837201',
+                ifsc_code: 'EQBL-KE-014',
+                account_type: 'Savings',
+                balance: 28000,
+              },
+            ]
+          : isSriLankaFarmer
+          ? [
+              {
+                id: 'acc_1',
+                bank_name: 'Bank of Ceylon',
+                account_number: '721045889901',
+                ifsc_code: 'BOC-LK-041',
+                account_type: 'Savings',
+                balance: 68500,
+              },
+              {
+                id: 'acc_2',
+                bank_name: 'People\'s Bank',
+                account_number: '348820015662',
+                ifsc_code: 'PB-LK-234',
+                account_type: 'Savings',
+                balance: 43200,
+              }
+            ]
+          : [
+              {
+                id: 'acc_1',
+                bank_name: 'State Bank of India',
+                account_number: '1234567890123456',
+                ifsc_code: 'SBIN0001234',
+                account_type: 'Savings',
+                balance: 24500,
+              },
+              {
+                id: 'acc_2',
+                bank_name: 'HDFC Bank',
+                account_number: '9876543210987654',
+                ifsc_code: 'HDFC0005678',
+                account_type: 'Current',
+                balance: 15600,
+              }
+            ]),
       ],
       decision_reasons: scenario === 'bank_rejection'
         ? {
@@ -531,10 +722,65 @@ export const CreditCheck: React.FC<CreditCheckProps> = ({
             ],
             needs_improvement: [
               'Attendance-linked monthly wages — income varies with days present (formal muster roll employment)',
-              'Income mostly via direct account transfer; expenses largely cash-based — limits verifiable expense trail',
+              'Income mostly via direct account transfer; expenses largely cash-based — limits expense trail identification',
             ],
             whats_bad: [
               'Limited credit mix — only unsecured credit exposure, no prior loan repayment history',
+            ],
+          }
+        : isSriLankaFarmer
+        ? {
+            whats_good: [
+              'Climate-adaptive product structure matches harvest-linked farm cashflows',
+              '2.5 years of bureau history with 91% on-time repayment',
+              'Low current debt-service ratio (7.2% DTI)',
+              'Paddy sales supported by irrigation-linked cultivation in Anuradhapura dry zone',
+              'Stable digital footprint (7yr SIM, 5yr email)',
+            ],
+            needs_improvement: [
+              'Rainfall shortfall may delay one crop cycle and compress seasonal cashflows',
+              'Household and farm expenses still include a meaningful cash component',
+            ],
+            whats_bad: [
+              'Income remains vulnerable to dry-zone weather volatility despite adaptation measures',
+            ],
+          }
+        : scenario === 'africa_agri_alt_only'
+        ? {
+            whats_good: [
+              'Highland-adjacent zone with moderate rainfall stability',
+              'Maize cultivation on 1.5 acres — viable subsistence-plus acreage',
+              'Irrigation access reduces full crop-failure risk',
+              'Socioeconomic context (GRDI) indicates moderate rural development',
+              'Productive-use loan purpose aligned with seasonal input cycle',
+            ],
+            needs_improvement: [
+              'Rainfall deficit of 15% in prior long-rains season — elevated input cost risk',
+              'Sandy loam soil with moderate water retention — sensitive to prolonged dry spells',
+              'Seasonal income concentration around one annual harvest cycle',
+              'Market access via seasonal road — collection risk in wet months',
+            ],
+            whats_bad: [
+              'Elevated drought exposure in lowland transition zone (SPEI -0.8)',
+              'Single-crop maize dependency with no secondary income buffer',
+            ],
+          }
+        : scenario === 'africa_agri_enhanced'
+        ? {
+            whats_good: [
+              'Highland coffee zone with stable rainfall — low climate stress',
+              'Coffee cultivation on 2 acres with established buyer relationships',
+              '2-year bureau history with 88% on-time repayment',
+              'Consistent M-Pesa cash-flow patterns across seasons',
+              'Socioeconomic context indicates above-average rural development',
+              'Prior loan repaid with only 1 seasonal delinquency episode',
+            ],
+            needs_improvement: [
+              'Single delinquency episode correlated with short-rains failure',
+              'Coffee price volatility creates export-market cashflow risk',
+            ],
+            whats_bad: [
+              'Moderate utilization on existing credit line (35%)',
             ],
           }
         : {
@@ -774,11 +1020,11 @@ export const CreditCheck: React.FC<CreditCheckProps> = ({
             <div className="space-y-4 w-full">
               <div>
                 <p className="text-sm text-gray-600">Requested Amount:</p>
-                <p className="text-lg font-semibold text-gray-900">₹{application.requested_amount?.toLocaleString('en-IN')}</p>
+                <p className="text-lg font-semibold text-gray-900">{formatCurrency(application.requested_amount)}</p>
               </div>
               <div>
                 <p className="text-sm text-gray-600">Eligible Amount:</p>
-                <p className="text-2xl font-bold text-green-600">₹{application.eligible_amount?.toLocaleString('en-IN')}</p>
+                <p className="text-2xl font-bold text-green-600">{formatCurrency(application.eligible_amount)}</p>
                 <p className="text-xs text-gray-500 mt-1 italic">
                   Based on bank statement analysis, disposable income, and credit score
                 </p>
@@ -789,24 +1035,24 @@ export const CreditCheck: React.FC<CreditCheckProps> = ({
                 <div className="mb-3">
                   <label className="text-sm font-semibold text-gray-900 flex items-center justify-between">
                     <span>Adjust Loan Amount:</span>
-                    <span className="text-lg text-[#11287c]">₹{selectedLoanAmount?.toLocaleString('en-IN')}</span>
+                    <span className="text-lg text-[#11287c]">{formatCurrency(selectedLoanAmount)}</span>
                   </label>
                 </div>
                 <input
                   type="range"
-                  min="5000"
+                  min={minimumLoanAmount}
                   max={application.eligible_amount || 100000}
                   step="1000"
                   value={selectedLoanAmount}
                   onChange={(e) => handleSliderChange(Number(e.target.value))}
                   className="w-full h-2 bg-blue-200 rounded-lg appearance-none cursor-pointer accent-[#11287c]"
                   style={{
-                    background: `linear-gradient(to right, #11287c 0%, #11287c ${((selectedLoanAmount - 5000) / ((application.eligible_amount || 100000) - 5000)) * 100}%, #dbeafe ${((selectedLoanAmount - 5000) / ((application.eligible_amount || 100000) - 5000)) * 100}%, #dbeafe 100%)`
+                    background: `linear-gradient(to right, #11287c 0%, #11287c ${((selectedLoanAmount - minimumLoanAmount) / ((application.eligible_amount || 100000) - minimumLoanAmount)) * 100}%, #dbeafe ${((selectedLoanAmount - minimumLoanAmount) / ((application.eligible_amount || 100000) - minimumLoanAmount)) * 100}%, #dbeafe 100%)`
                   }}
                 />
                 <div className="flex justify-between text-xs text-gray-600 mt-1">
-                  <span>₹5,000</span>
-                  <span>₹{application.eligible_amount?.toLocaleString('en-IN')}</span>
+                  <span>{formatCurrency(minimumLoanAmount)}</span>
+                  <span>{formatCurrency(application.eligible_amount)}</span>
                 </div>
               </div>
 
@@ -852,6 +1098,77 @@ export const CreditCheck: React.FC<CreditCheckProps> = ({
               </div>
             </div>
           )}
+          {isSriLankaFarmerScenario && (
+            <div className="mt-4 p-4 bg-gradient-to-r from-amber-50 to-yellow-50 rounded-lg border border-amber-200">
+              <div className="flex items-start gap-3">
+                <div className="flex-shrink-0 w-10 h-10 bg-amber-100 rounded-full flex items-center justify-center">
+                  <span className="text-xl">🌾</span>
+                </div>
+                <div className="flex-1">
+                  <h4 className="font-bold text-amber-900 mb-2">Sri Lanka Climate-Adaptive Terms</h4>
+                  <p className="text-sm text-amber-800 mb-2">
+                    Based on global climate indicators showing rainfall shortfall and elevated dry-zone crop stress in Anuradhapura, this loan is structured to match farm cashflows:
+                  </p>
+                  <ul className="text-sm text-amber-800 space-y-1 ml-4">
+                    <li>• <strong>Extended 18-month tenure</strong> to absorb one weaker season</li>
+                    <li>• <strong>Harvest-aligned repayment windows</strong> after Maha and Yala crop realizations</li>
+                    <li>• <strong>Lighter repayment pressure in planting months</strong> when input costs peak</li>
+                    <li>• <strong>Prepayment flexibility</strong> if harvest sales materialize early</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          )}
+          {isAfricaAltOnly && (
+            <div className="mt-4 p-4 bg-gradient-to-r from-orange-50 to-amber-50 rounded-lg border border-orange-200">
+              <div className="flex items-start gap-3">
+                <div className="flex-shrink-0 w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center">
+                  <span className="text-xl">🌍</span>
+                </div>
+                <div className="flex-1">
+                  <h4 className="font-bold text-orange-900 mb-2">Climate & Farm-Based Underwriting</h4>
+                  <p className="text-sm text-orange-800 mb-2">
+                    Ki Score is derived from farm-level alternate data signals, enabling a credit decision without requiring bureau history or bank statements:
+                  </p>
+                  <ul className="text-sm text-orange-800 space-y-1 ml-4">
+                    <li>• <strong>Climate & soil analysis</strong> — moderate drought exposure offset by borehole irrigation</li>
+                    <li>• <strong>Farm profile</strong> — 1.5 acres maize, viable subsistence-plus acreage</li>
+                    <li>• <strong>Socioeconomic context</strong> — GRDI 0.48 indicates moderate rural development</li>
+                    <li>• <strong>Income estimated from crop-yield models</strong> — KES 18,000–25,000/month</li>
+                    <li>• <strong>12-month term</strong> aligned with single seasonal input cycle</li>
+                  </ul>
+                  <p className="text-xs text-orange-700 mt-2 italic">
+                    18% APR — formal institutional credit structured for seasonal repayment. Comparable informal lending in this region typically carries rates of 40–80%+.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+          {isAfricaEnhanced && (
+            <div className="mt-4 p-4 bg-gradient-to-r from-emerald-50 to-green-50 rounded-lg border border-emerald-200">
+              <div className="flex items-start gap-3">
+                <div className="flex-shrink-0 w-10 h-10 bg-emerald-100 rounded-full flex items-center justify-center">
+                  <span className="text-xl">🌍</span>
+                </div>
+                <div className="flex-1">
+                  <h4 className="font-bold text-emerald-900 mb-2">Enhanced Underwriting — Bureau + M-Pesa + Alt Data</h4>
+                  <p className="text-sm text-emerald-800 mb-2">
+                    This borrower has a 2-year credit bureau record, active M-Pesa cash flows, and strong alternative data signals:
+                  </p>
+                  <ul className="text-sm text-emerald-800 space-y-1 ml-4">
+                    <li>• <strong>Bureau history</strong> — 88% on-time, one seasonal DPD episode</li>
+                    <li>• <strong>M-Pesa cash flows</strong> — consistent coffee-sale receipts and buyer payments</li>
+                    <li>• <strong>Climate profile</strong> — highland coffee zone, low drought risk</li>
+                    <li>• <strong>Farm profile</strong> — 2 acres Arabica coffee with established buyer network</li>
+                    <li>• <strong>18-month term</strong> to accommodate coffee harvest cycles</li>
+                  </ul>
+                  <p className="text-xs text-emerald-700 mt-2 italic">
+                    14% APR — richer data envelope enables sharper risk pricing and materially better terms for the borrower.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
         <div className="bg-white p-6 rounded-lg shadow-sm">
@@ -884,9 +1201,27 @@ export const CreditCheck: React.FC<CreditCheckProps> = ({
           </div>
         </div>
 
+        {!isAfricaAltOnly && (
         <div className="bg-white p-6 rounded-lg shadow-sm">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-gray-900">Bureau Details</h3>
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900">Bureau Details</h3>
+              {isSriLankaFarmerScenario && (
+                <p className="text-xs text-gray-500 mt-1">
+                  CRIB bureau data
+                </p>
+              )}
+              {isAfricaAltOnly && (
+                <p className="text-xs text-gray-500 mt-1">
+                  No bureau record — alt-data-only borrower
+                </p>
+              )}
+              {isAfricaEnhanced && (
+                <p className="text-xs text-gray-500 mt-1">
+                  Kenya CRB bureau data
+                </p>
+              )}
+            </div>
             <span className={`px-4 py-2 rounded-full text-sm font-semibold ${
               kiScore <= 35 ? 'bg-green-100 text-green-800 border-2 border-green-300' :
               kiScore <= 55 ? 'bg-yellow-100 text-yellow-800 border-2 border-yellow-300' :
@@ -929,6 +1264,27 @@ export const CreditCheck: React.FC<CreditCheckProps> = ({
                     <li className="text-green-800">• Moderate credit utilization (58%)</li>
                   </>
                 )}
+                {scenario === 'sri_lanka_climate_farmer' && (
+                  <>
+                    <li className="text-green-800">• 2.5 years of bureau history</li>
+                    <li className="text-green-800">• 91% on-time repayment rate</li>
+                    <li className="text-green-800">• Moderate credit utilization (41%)</li>
+                    <li className="text-green-800">• Mix of productive and consumption credit</li>
+                  </>
+                )}
+                {scenario === 'africa_agri_alt_only' && (
+                  <>
+                    <li className="text-green-800">• N/A — no bureau record on file</li>
+                  </>
+                )}
+                {scenario === 'africa_agri_enhanced' && (
+                  <>
+                    <li className="text-green-800">• 2-year credit bureau history</li>
+                    <li className="text-green-800">• 88% on-time repayment rate</li>
+                    <li className="text-green-800">• Moderate credit utilization (35%)</li>
+                    <li className="text-green-800">• Prior loan successfully repaid</li>
+                  </>
+                )}
                 {scenario === 'bank_rejection' && (
                   <>
                     <li className="text-green-800">• Has 2-year credit history</li>
@@ -962,6 +1318,24 @@ export const CreditCheck: React.FC<CreditCheckProps> = ({
                     <li className="text-yellow-800">• 3 credit inquiries in 6 months</li>
                   </>
                 )}
+                {scenario === 'sri_lanka_climate_farmer' && (
+                  <>
+                    <li className="text-yellow-800">• One 1-30 DPD incident during the previous lean season</li>
+                    <li className="text-yellow-800">• Credit exposure concentrated around agricultural cashflow cycles</li>
+                  </>
+                )}
+                {scenario === 'africa_agri_alt_only' && (
+                  <>
+                    <li className="text-yellow-800">• No credit bureau record — thin-file borrower</li>
+                    <li className="text-yellow-800">• No verifiable repayment history available</li>
+                  </>
+                )}
+                {scenario === 'africa_agri_enhanced' && (
+                  <>
+                    <li className="text-yellow-800">• One 30 DPD episode (seasonal, correlated with short-rains failure)</li>
+                    <li className="text-yellow-800">• Single active credit line</li>
+                  </>
+                )}
                 {scenario === 'bank_rejection' && (
                   <>
                     <li className="text-yellow-800">• High credit utilization (92%)</li>
@@ -993,6 +1367,21 @@ export const CreditCheck: React.FC<CreditCheckProps> = ({
                     <li className="text-red-800">• None significant</li>
                   </>
                 )}
+                {scenario === 'sri_lanka_climate_farmer' && (
+                  <>
+                    <li className="text-red-800">• Limited cushion if two crop cycles underperform consecutively</li>
+                  </>
+                )}
+                {scenario === 'africa_agri_alt_only' && (
+                  <>
+                    <li className="text-red-800">• Complete absence of formal credit history — no repayment track record</li>
+                  </>
+                )}
+                {scenario === 'africa_agri_enhanced' && (
+                  <>
+                    <li className="text-red-800">• Moderate utilization on existing credit line (35%)</li>
+                  </>
+                )}
                 {scenario === 'bank_rejection' && (
                   <>
                     <li className="text-red-800">• 60-90 DPD recorded in last year</li>
@@ -1010,41 +1399,79 @@ export const CreditCheck: React.FC<CreditCheckProps> = ({
             </div>
           </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-            <div>
-              <p className="text-gray-600 text-xs">Credit History</p>
-              <p className="font-semibold text-gray-900">{application.bureau_data?.credit_history_length}</p>
+          {isAfricaScenario ? (
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+              <div>
+                <p className="text-gray-600 text-xs">Credit History</p>
+                <p className="font-semibold text-gray-900">{application.bureau_data?.credit_history_length}</p>
+              </div>
+              <div>
+                <p className="text-gray-600 text-xs">Credit Score</p>
+                <p className="font-semibold text-gray-900">{application.bureau_data?.credit_score === 0 ? 'N/A' : application.bureau_data?.credit_score}</p>
+              </div>
+              <div>
+                <p className="text-gray-600 text-xs">Active Loans</p>
+                <p className="font-semibold text-gray-900">{application.bureau_data?.active_loans}</p>
+              </div>
+              <div>
+                <p className="text-gray-600 text-xs">Total Outstanding</p>
+                <p className="font-semibold text-gray-900">{application.bureau_data?.total_outstanding === 0 ? 'N/A' : formatCurrency(application.bureau_data?.total_outstanding)}</p>
+              </div>
+              <div>
+                <p className="text-gray-600 text-xs">On-Time Payments</p>
+                <p className="font-semibold text-gray-900">{application.bureau_data?.on_time_payment_rate}</p>
+              </div>
+              <div>
+                <p className="text-gray-600 text-xs">Utilization Rate</p>
+                <p className="font-semibold text-gray-900">{application.bureau_data?.utilization_rate}</p>
+              </div>
+              <div>
+                <p className="text-gray-600 text-xs">Delinquencies</p>
+                <p className="font-semibold text-gray-900">{application.bureau_data?.delinquencies}</p>
+              </div>
+              <div>
+                <p className="text-gray-600 text-xs">DPD Status</p>
+                <p className="font-semibold text-gray-900">{application.bureau_data?.dpd_status}</p>
+              </div>
             </div>
-            <div>
-              <p className="text-gray-600 text-xs">Active Accounts</p>
-              <p className="font-semibold text-gray-900">{application.bureau_data?.active_accounts}</p>
+          ) : (
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+              <div>
+                <p className="text-gray-600 text-xs">Credit History</p>
+                <p className="font-semibold text-gray-900">{application.bureau_data?.credit_history_length}</p>
+              </div>
+              <div>
+                <p className="text-gray-600 text-xs">Active Accounts</p>
+                <p className="font-semibold text-gray-900">{application.bureau_data?.active_accounts}</p>
+              </div>
+              <div>
+                <p className="text-gray-600 text-xs">Inquiries (180d)</p>
+                <p className="font-semibold text-gray-900">{application.bureau_data?.inquiries_180d}</p>
+              </div>
+              <div>
+                <p className="text-gray-600 text-xs">Worst DPD (12m)</p>
+                <p className="font-semibold text-gray-900">{application.bureau_data?.worst_dpd_12m}</p>
+              </div>
+              <div>
+                <p className="text-gray-600 text-xs">Credit Utilization</p>
+                <p className="font-semibold text-gray-900">{application.bureau_data?.credit_utilization}</p>
+              </div>
+              <div>
+                <p className="text-gray-600 text-xs">On-Time Payments</p>
+                <p className="font-semibold text-gray-900">{application.bureau_data?.on_time_payment_rate}</p>
+              </div>
+              <div>
+                <p className="text-gray-600 text-xs">Total Balance</p>
+                <p className="font-semibold text-gray-900">{formatCurrency(application.bureau_data?.total_balance)}</p>
+              </div>
+              <div>
+                <p className="text-gray-600 text-xs">Oldest Account</p>
+                <p className="font-semibold text-gray-900">{application.bureau_data?.oldest_account}</p>
+              </div>
             </div>
-            <div>
-              <p className="text-gray-600 text-xs">Inquiries (180d)</p>
-              <p className="font-semibold text-gray-900">{application.bureau_data?.inquiries_180d}</p>
-            </div>
-            <div>
-              <p className="text-gray-600 text-xs">Worst DPD (12m)</p>
-              <p className="font-semibold text-gray-900">{application.bureau_data?.worst_dpd_12m}</p>
-            </div>
-            <div>
-              <p className="text-gray-600 text-xs">Credit Utilization</p>
-              <p className="font-semibold text-gray-900">{application.bureau_data?.credit_utilization}</p>
-            </div>
-            <div>
-              <p className="text-gray-600 text-xs">On-Time Payments</p>
-              <p className="font-semibold text-gray-900">{application.bureau_data?.on_time_payment_rate}</p>
-            </div>
-            <div>
-              <p className="text-gray-600 text-xs">Total Balance</p>
-              <p className="font-semibold text-gray-900">₹{application.bureau_data?.total_balance?.toLocaleString('en-IN')}</p>
-            </div>
-            <div>
-              <p className="text-gray-600 text-xs">Oldest Account</p>
-              <p className="font-semibold text-gray-900">{application.bureau_data?.oldest_account}</p>
-            </div>
-          </div>
+          )}
         </div>
+        )}
 
         <div className="bg-white p-6 rounded-lg shadow-sm">
           <div className="flex items-center justify-between mb-3">
@@ -1065,10 +1492,65 @@ export const CreditCheck: React.FC<CreditCheckProps> = ({
             <p className="text-xs text-green-700 mt-1">
               {scenario === 'young_professional'
                 ? 'Strong employment base, acceptable area default rates, and improving peer cohort repayment trends'
-                : 'Strong community ties, stable location indicators, and positive economic activity patterns'
-              }
+                : scenario === 'sri_lanka_climate_farmer'
+                ? 'Climate, cash-flow, and repayment signals support approval when the product is structured around harvest-linked seasonality'
+                : scenario === 'africa_agri_alt_only'
+                ? 'Climate, farm profile, and socioeconomic signals provide sufficient evidence for productive-use lending with structured seasonal repayment'
+                : scenario === 'africa_agri_enhanced'
+                ? 'Strong climate profile, consistent M-Pesa cash flows, and bureau history support approval with competitive terms'
+                : 'Strong community ties, stable location indicators, and positive economic activity patterns'}
             </p>
           </div>
+
+          {/* Data Sources panel — Africa alt-only */}
+          {isAfricaAltOnly && (
+            <div className="mb-6 p-4 bg-gray-50 border border-gray-200 rounded-lg">
+              <h4 className="text-sm font-semibold text-gray-900 mb-3">Data Sources Used in This Assessment</h4>
+              <div className="overflow-x-auto">
+                <table className="w-full text-xs">
+                  <thead>
+                    <tr className="text-left text-gray-500 border-b border-gray-200">
+                      <th className="pb-2 pr-4 font-semibold">Source</th>
+                      <th className="pb-2 pr-4 font-semibold">Resolution</th>
+                      <th className="pb-2 font-semibold">Role in Assessment</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100">
+                    <tr>
+                      <td className="py-1.5 pr-4 font-medium text-gray-800">CHIRPS v2</td>
+                      <td className="py-1.5 pr-4 text-gray-600">5km / Monthly</td>
+                      <td className="py-1.5 text-gray-600">Rainfall patterns, precipitation anomaly vs 10-year baseline</td>
+                    </tr>
+                    <tr>
+                      <td className="py-1.5 pr-4 font-medium text-gray-800">ERA5-Land</td>
+                      <td className="py-1.5 pr-4 text-gray-600">9km / Hourly</td>
+                      <td className="py-1.5 text-gray-600">Temperature, surface runoff, heat stress signals</td>
+                    </tr>
+                    <tr>
+                      <td className="py-1.5 pr-4 font-medium text-gray-800">SPEI Index</td>
+                      <td className="py-1.5 pr-4 text-gray-600">55km / Monthly</td>
+                      <td className="py-1.5 text-gray-600">Drought severity index (1–48 month scales)</td>
+                    </tr>
+                    <tr>
+                      <td className="py-1.5 pr-4 font-medium text-gray-800">SoilGrids</td>
+                      <td className="py-1.5 pr-4 text-gray-600">250m</td>
+                      <td className="py-1.5 text-gray-600">Soil composition, drainage, water retention capacity</td>
+                    </tr>
+                    <tr>
+                      <td className="py-1.5 pr-4 font-medium text-gray-800">CIAT / GRDI</td>
+                      <td className="py-1.5 pr-4 text-gray-600">10km</td>
+                      <td className="py-1.5 text-gray-600">Rural deprivation index, socioeconomic vulnerability</td>
+                    </tr>
+                    <tr>
+                      <td className="py-1.5 pr-4 font-medium text-gray-800">Farm Profile</td>
+                      <td className="py-1.5 pr-4 text-gray-600">Point-level GPS</td>
+                      <td className="py-1.5 text-gray-600">Crop type, acreage, irrigation practice, land tenure</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
 
           {/* Alternate Data Assessment Factors */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
@@ -1082,6 +1564,30 @@ export const CreditCheck: React.FC<CreditCheckProps> = ({
                     <li className="text-green-800">• Peer cohort shows improving repayment trend (+2.3% YoY)</li>
                     <li className="text-green-800">• Long mobile tenure (6 years) — stable identity</li>
                     <li className="text-green-800">• Established email (4 years) — reliable digital footprint</li>
+                  </>
+                ) : scenario === 'sri_lanka_climate_farmer' ? (
+                  <>
+                    <li className="text-green-800">• Harvest-linked inflows visible across paddy sale cycles</li>
+                    <li className="text-green-800">• Irrigation-supported cultivation lowers full crop-failure risk</li>
+                    <li className="text-green-800">• Access to collection and trading points supports sales realization</li>
+                    <li className="text-green-800">• Stable mobile and contact continuity support identity confidence</li>
+                    <li className="text-green-800">• Productive-use borrowing pattern is visible in bureau and bank data</li>
+                  </>
+                ) : scenario === 'africa_agri_alt_only' ? (
+                  <>
+                    <li className="text-green-800">• Highland-adjacent zone with moderate rainfall stability</li>
+                    <li className="text-green-800">• Irrigation access (borehole) reduces full crop-failure risk</li>
+                    <li className="text-green-800">• Viable subsistence-plus acreage (1.5 acres maize)</li>
+                    <li className="text-green-800">• GRDI indicates moderate rural development context</li>
+                    <li className="text-green-800">• Productive-use loan purpose aligned with seasonal input cycle</li>
+                  </>
+                ) : scenario === 'africa_agri_enhanced' ? (
+                  <>
+                    <li className="text-green-800">• Highland coffee zone with stable rainfall — low climate stress</li>
+                    <li className="text-green-800">• Consistent M-Pesa cash-flow patterns across seasons</li>
+                    <li className="text-green-800">• Established buyer relationships for coffee sales</li>
+                    <li className="text-green-800">• Above-average rural development context (GRDI 0.35)</li>
+                    <li className="text-green-800">• Red laterite soil suitable for Arabica coffee</li>
                   </>
                 ) : (
                   <>
@@ -1108,6 +1614,23 @@ export const CreditCheck: React.FC<CreditCheckProps> = ({
                     <li className="text-yellow-800">• Moderate drought risk (45%) in next 6 months</li>
                     <li className="text-yellow-800">• -18% crop yield impact expected</li>
                   </>
+                ) : scenario === 'sri_lanka_climate_farmer' ? (
+                  <>
+                    <li className="text-yellow-800">• Rainfall running 17% below long-term average in the dry zone</li>
+                    <li className="text-yellow-800">• Water stress can delay one paddy cycle and extend working-capital needs</li>
+                    <li className="text-yellow-800">• Limited formal collateral documentation</li>
+                  </>
+                ) : scenario === 'africa_agri_alt_only' ? (
+                  <>
+                    <li className="text-yellow-800">• 15% rainfall deficit in prior long-rains season</li>
+                    <li className="text-yellow-800">• No bank or M-Pesa transaction record available</li>
+                    <li className="text-yellow-800">• Limited formal collateral documentation</li>
+                  </>
+                ) : scenario === 'africa_agri_enhanced' ? (
+                  <>
+                    <li className="text-yellow-800">• Coffee price volatility creates export-market cashflow risk</li>
+                    <li className="text-yellow-800">• Single delinquency episode correlated with short-rains failure</li>
+                  </>
                 ) : (
                   <>
                     <li className="text-yellow-800">• Moderate geographic saturation (68%)</li>
@@ -1119,7 +1642,18 @@ export const CreditCheck: React.FC<CreditCheckProps> = ({
             <div className="bg-red-50 border border-red-200 rounded-lg p-4">
               <h4 className="text-sm font-semibold text-red-900 mb-2">Risk Factors</h4>
               <ul className="text-xs space-y-1">
-                <li className="text-red-800">• None identified</li>
+                {scenario === 'africa_agri_alt_only' ? (
+                  <>
+                    <li className="text-red-800">• Climate variability in lowland transition zone — elevated drought exposure</li>
+                    <li className="text-red-800">• Single crop dependency (maize) — no diversification signal</li>
+                  </>
+                ) : scenario === 'africa_agri_enhanced' ? (
+                  <>
+                    <li className="text-red-800">• None significant</li>
+                  </>
+                ) : (
+                  <li className="text-red-800">• None identified</li>
+                )}
               </ul>
             </div>
           </div>
@@ -1265,6 +1799,218 @@ export const CreditCheck: React.FC<CreditCheckProps> = ({
               </div>
 
             </div>
+          ) : isSriLankaFarmerScenario ? (
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="w-8 h-8 bg-blue-600 rounded flex items-center justify-center text-white text-sm font-bold">🌦️</div>
+                  <h4 className="font-semibold text-blue-900">Climate Risk Indicators</h4>
+                </div>
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Rainfall deviation:</span>
+                    <span className="font-medium text-orange-600">-17% vs 10Y avg</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Drought risk (next season):</span>
+                    <span className="font-medium text-red-600">Moderate-High</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Flood risk:</span>
+                    <span className="font-medium text-green-600">Low</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Expected yield pressure:</span>
+                    <span className="font-medium text-orange-600">-12% to -15%</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-green-50 p-4 rounded-lg border border-green-200">
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="w-8 h-8 bg-green-600 rounded flex items-center justify-center text-white text-sm font-bold">🌾</div>
+                  <h4 className="font-semibold text-green-900">Agri Context</h4>
+                </div>
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Primary livelihood:</span>
+                    <span className="font-medium text-green-600">Smallholder paddy</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Crop cycle:</span>
+                    <span className="font-medium text-green-600">Maha / Yala</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Irrigation dependency:</span>
+                    <span className="font-medium text-yellow-600">High</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Crop diversification:</span>
+                    <span className="font-medium text-green-600">Paddy + home-garden crops</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-purple-50 p-4 rounded-lg border border-purple-200">
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="w-8 h-8 bg-purple-600 rounded flex items-center justify-center text-white text-sm font-bold">🚚</div>
+                  <h4 className="font-semibold text-purple-900">Market Access & Resilience</h4>
+                </div>
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Collection point:</span>
+                    <span className="font-medium text-green-600">Kekirawa hub</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Buyer network:</span>
+                    <span className="font-medium text-green-600">Multiple millers / traders</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Road access:</span>
+                    <span className="font-medium text-green-600">All-weather secondary road</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Repayment fit:</span>
+                    <span className="font-medium text-green-600">Harvest-aligned feasible</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ) : isAfricaScenario ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="w-8 h-8 bg-blue-600 rounded flex items-center justify-center text-white text-sm font-bold">🌦️</div>
+                  <h4 className="font-semibold text-blue-900">Climate & Soil Profile</h4>
+                </div>
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Climate risk score:</span>
+                    <span className={`font-medium ${isAfricaAltOnly ? 'text-orange-600' : 'text-green-600'}`}>{application.alternate_data?.climate_risk_score ?? (isAfricaAltOnly ? 62 : 28)}/100</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Rainfall trend:</span>
+                    <span className={`font-medium ${isAfricaAltOnly ? 'text-orange-600' : 'text-green-600'}`}>{isAfricaAltOnly ? '15% deficit' : 'Stable'}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Drought severity:</span>
+                    <span className={`font-medium ${isAfricaAltOnly ? 'text-orange-600' : 'text-green-600'}`}>{isAfricaAltOnly ? 'Moderate (SPEI -0.8)' : 'Low (SPEI 0.3)'}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Temperature hazard:</span>
+                    <span className="font-medium text-green-600">Low</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Soil profile:</span>
+                    <span className="font-medium text-green-600">{isAfricaAltOnly ? 'Sandy loam, pH 6.2' : 'Red laterite, pH 5.8'}</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-green-50 p-4 rounded-lg border border-green-200">
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="w-8 h-8 bg-green-600 rounded flex items-center justify-center text-white text-sm font-bold">🌱</div>
+                  <h4 className="font-semibold text-green-900">Farm Profile</h4>
+                </div>
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Crop type:</span>
+                    <span className="font-medium text-green-600">{isAfricaAltOnly ? 'Maize' : 'Coffee (Arabica)'}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Acreage:</span>
+                    <span className="font-medium text-green-600">{isAfricaAltOnly ? '1.5 acres' : '2 acres'}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Irrigation:</span>
+                    <span className="font-medium text-green-600">{isAfricaAltOnly ? 'Supplemental (borehole)' : 'Rain-fed with shade cover'}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Diversification:</span>
+                    <span className={`font-medium ${isAfricaAltOnly ? 'text-orange-600' : 'text-green-600'}`}>{isAfricaAltOnly ? 'None detected' : 'Shade-tree intercropping'}</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-purple-50 p-4 rounded-lg border border-purple-200">
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="w-8 h-8 bg-purple-600 rounded flex items-center justify-center text-white text-sm font-bold">📊</div>
+                  <h4 className="font-semibold text-purple-900">Socioeconomic Context</h4>
+                </div>
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">GRDI index:</span>
+                    <span className={`font-medium ${isAfricaAltOnly ? 'text-yellow-600' : 'text-green-600'}`}>{isAfricaAltOnly ? '0.48 (Moderate)' : '0.35 (Above avg)'}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Road access:</span>
+                    <span className="font-medium text-green-600">{isAfricaAltOnly ? 'Seasonal road' : 'All-weather road'}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Market proximity:</span>
+                    <span className="font-medium text-green-600">{isAfricaAltOnly ? '12km to nearest market' : '8km to collection point'}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Financial access:</span>
+                    <span className="font-medium text-green-600">{isAfricaAltOnly ? 'M-Pesa agent within 3km' : 'Bank branch + M-Pesa'}</span>
+                  </div>
+                </div>
+              </div>
+
+              {isAfricaAltOnly && (
+                <div className="bg-amber-50 p-4 rounded-lg border border-amber-200">
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="w-8 h-8 bg-amber-600 rounded flex items-center justify-center text-white text-sm font-bold">💰</div>
+                    <h4 className="font-semibold text-amber-900">Yield & Income Estimation</h4>
+                  </div>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Estimated yield:</span>
+                      <span className="font-medium text-amber-700">~1.8 tons/acre (irrigated)</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Gross farm income:</span>
+                      <span className="font-medium text-amber-700">KES 35,000–45,000/season</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Monthly equivalent:</span>
+                      <span className="font-medium text-amber-700">KES 18,000–25,000</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Repayment capacity:</span>
+                      <span className="font-medium text-green-600">DTI est. &lt;30%</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {isAfricaEnhanced && (
+                <div className="bg-orange-50 p-4 rounded-lg border border-orange-200">
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="w-8 h-8 bg-orange-600 rounded flex items-center justify-center text-white text-sm font-bold">📱</div>
+                    <h4 className="font-semibold text-orange-900">M-Pesa Cash Flow Signals</h4>
+                  </div>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Monthly M-Pesa receipts:</span>
+                      <span className="font-medium text-green-600">KES 10,000</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Coffee buyer payments:</span>
+                      <span className="font-medium text-green-600">KES 28,000/month</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Cash-flow consistency:</span>
+                      <span className="font-medium text-green-600">Stable across seasons</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Transaction regularity:</span>
+                      <span className="font-medium text-green-600">Weekly buyer settlements</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
           ) : (
             /* Other scenarios: original 3-panel grid */
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -1387,6 +2133,13 @@ export const CreditCheck: React.FC<CreditCheckProps> = ({
               <p className="text-sm text-green-800">
                 {scenario === 'young_professional'
                   ? <><strong>Moderate-low default probability.</strong> Area cohort PAR30 (4.2%) and occupation-specific default rate (3.8%) are within acceptable lending thresholds. Repayment trend is improving.</>
+                  : isSriLankaFarmerScenario
+                  ? <><strong>Moderate-low default probability.</strong> Climate stress is visible, but repayment capacity is supported by irrigation-linked cultivation, market access, and the harvest-aligned product structure.</>
+                  : isAfricaAltOnly
+                  ? <><strong>Moderate default probability.</strong> Climate signals indicate rainfall stress in the prior season, partially mitigated by borehole irrigation. Farm profile, crop-yield modelling, and socioeconomic context support repayment capacity within the structured 12-month term.</>
+
+                  : isAfricaEnhanced
+                  ? <><strong>Low-moderate default probability.</strong> Bureau history, M-Pesa cash flows, and strong climate profile collectively support repayment capacity. Single seasonal DPD episode is structurally explained.</>
                   : <><strong>Low default probability</strong> based on market stress indicators and local economic factors.</>
                 }
               </p>
@@ -1402,6 +2155,13 @@ export const CreditCheck: React.FC<CreditCheckProps> = ({
               <p className="text-sm text-blue-800">
                 {(application as any).demo_scenario_id === 'young_professional'
                   ? <>Estimated <strong>₹14,000 – ₹17,500 monthly income</strong> based on attendance-linked monthly wage pattern and occupation-level benchmarks for auto components manufacturing workers (Bhosari MIDC, Pune).</>
+                  : isSriLankaFarmerScenario
+                  ? <>Estimated <strong>LKR 110,000 – 135,000 monthly household cash inflow</strong> based on paddy-sale realizations, secondary farm income, and seasonal market-access patterns.</>
+                  : isAfricaAltOnly
+                  ? <>Estimated <strong>KES 18,000 – 25,000 monthly household income</strong> from farm profile, crop-yield models (maize, 1.5 acres, borehole irrigation), and socioeconomic context. Seasonal peak income aligns with post-harvest sale periods.</>
+
+                  : isAfricaEnhanced
+                  ? <>Estimated <strong>KES 35,000 – 48,000 monthly household income</strong> from farm profile, M-Pesa cash flows, and buyer payment records.</>
                   : <>Estimated <strong>₹35,000 – ₹45,000 monthly household income</strong> based on agricultural output, local market activity, and rural spending patterns.</>
                 }
               </p>
@@ -1409,6 +2169,7 @@ export const CreditCheck: React.FC<CreditCheckProps> = ({
           </div>
         </div>
 
+        {!isAfricaAltOnly && (
         <div className="bg-white p-6 rounded-lg shadow-sm">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
@@ -1422,9 +2183,11 @@ export const CreditCheck: React.FC<CreditCheckProps> = ({
                 ? 'bg-green-100 text-green-800 border-2 border-green-300' 
                 : application.bank_statement_data?.status === 'Average'
                 ? 'bg-yellow-100 text-yellow-800 border-2 border-yellow-300'
+                : application.bank_statement_data?.status === 'N/A'
+                ? 'bg-gray-100 text-gray-800 border-2 border-gray-300'
                 : 'bg-red-100 text-red-800 border-2 border-red-300'
             }`}>
-              {(application.bank_statement_data?.status === 'V Good' || application.bank_statement_data?.status === 'Good') ? '✓ Positive' : application.bank_statement_data?.status === 'Average' ? '⚠️ Neutral' : '✕ Negative'}
+              {(application.bank_statement_data?.status === 'V Good' || application.bank_statement_data?.status === 'Good') ? '✓ Positive' : application.bank_statement_data?.status === 'Average' ? '⚠️ Neutral' : application.bank_statement_data?.status === 'N/A' ? '— Not Available' : '✕ Negative'}
             </span>
           </div>
           <div className={`mb-4 p-3 border-l-4 rounded ${
@@ -1432,6 +2195,8 @@ export const CreditCheck: React.FC<CreditCheckProps> = ({
               ? 'bg-green-50 border-green-500' 
               : application.bank_statement_data?.status === 'Average'
               ? 'bg-yellow-50 border-yellow-500'
+              : application.bank_statement_data?.status === 'N/A'
+              ? 'bg-gray-50 border-gray-400'
               : 'bg-red-50 border-red-500'
           }`}>
             <p className={`text-sm font-semibold ${
@@ -1439,12 +2204,16 @@ export const CreditCheck: React.FC<CreditCheckProps> = ({
                 ? 'text-green-900' 
                 : application.bank_statement_data?.status === 'Average'
                 ? 'text-yellow-900'
+                : application.bank_statement_data?.status === 'N/A'
+                ? 'text-gray-900'
                 : 'text-red-900'
             }`}>
               {(application.bank_statement_data?.status === 'V Good' || application.bank_statement_data?.status === 'Good') 
                 ? '✓ Overall Verdict: This customer has stable cash flow' 
                 : application.bank_statement_data?.status === 'Average'
                 ? '⚠️ Overall Verdict: This customer has average cash flow patterns'
+                : application.bank_statement_data?.status === 'N/A'
+                ? '— No bank statement data available for this borrower'
                 : '✕ Overall Verdict: This customer shows financial instability'}
             </p>
             <p className={`text-xs mt-1 ${
@@ -1452,12 +2221,16 @@ export const CreditCheck: React.FC<CreditCheckProps> = ({
                 ? 'text-green-700' 
                 : application.bank_statement_data?.status === 'Average'
                 ? 'text-yellow-700'
+                : application.bank_statement_data?.status === 'N/A'
+                ? 'text-gray-600'
                 : 'text-red-700'
             }`}>
               {(application.bank_statement_data?.status === 'V Good' || application.bank_statement_data?.status === 'Good') 
                 ? 'Regular income patterns, healthy account balance, and manageable debt obligations' 
                 : application.bank_statement_data?.status === 'Average'
                 ? 'Adequate income with some irregularities, moderate debt levels'
+                : application.bank_statement_data?.status === 'N/A'
+                ? 'Borrower has no formal bank account. Income assessment relies on alternative data signals.'
                 : 'Low balance, excessive outflows, high debt-to-income ratio, and irregular patterns'}
             </p>
           </div>
@@ -1487,6 +2260,26 @@ export const CreditCheck: React.FC<CreditCheckProps> = ({
                     <li className="text-green-800">• Good avg balance (₹24,000)</li>
                     <li className="text-green-800">• Diversified income (agriculture + dairy)</li>
                     <li className="text-green-800">• Healthy monthly surplus</li>
+                  </>
+                )}
+                {scenario === 'sri_lanka_climate_farmer' && (
+                  <>
+                    <li className="text-green-800">• Healthy average balance (LKR 46,000)</li>
+                    <li className="text-green-800">• Strong paddy-sale inflows supported by secondary farm income</li>
+                    <li className="text-green-800">• Low debt-service ratio (7.2%)</li>
+                  </>
+                )}
+                {scenario === 'africa_agri_alt_only' && (
+                  <>
+                    <li className="text-green-800">• N/A — no bank account on file</li>
+                  </>
+                )}
+                {scenario === 'africa_agri_enhanced' && (
+                  <>
+                    <li className="text-green-800">• Consistent M-Pesa and bank activity</li>
+                    <li className="text-green-800">• Healthy average balance (KES 28,000)</li>
+                    <li className="text-green-800">• Low debt-to-income ratio (13%)</li>
+                    <li className="text-green-800">• Regular coffee buyer payment receipts</li>
                   </>
                 )}
                 {scenario === 'bank_rejection' && (
@@ -1524,6 +2317,25 @@ export const CreditCheck: React.FC<CreditCheckProps> = ({
                     <li className="text-yellow-800">• Moderate account stability rating</li>
                   </>
                 )}
+                {scenario === 'sri_lanka_climate_farmer' && (
+                  <>
+                    <li className="text-yellow-800">• Cash inflows remain harvest-heavy rather than evenly monthly</li>
+                    <li className="text-yellow-800">• Input purchases spike before planting periods</li>
+                    <li className="text-yellow-800">• Weather shocks may extend receivable timing by one cycle</li>
+                  </>
+                )}
+                {scenario === 'africa_agri_alt_only' && (
+                  <>
+                    <li className="text-yellow-800">• No bank account — income estimated from alt data only</li>
+                    <li className="text-yellow-800">• No formal cash-flow verification possible</li>
+                  </>
+                )}
+                {scenario === 'africa_agri_enhanced' && (
+                  <>
+                    <li className="text-yellow-800">• Coffee-sale timing creates seasonal inflow concentration</li>
+                    <li className="text-yellow-800">• M-Pesa outflows include informal household spending</li>
+                  </>
+                )}
                 {scenario === 'bank_rejection' && (
                   <>
                     <li className="text-yellow-800">• Very low income (₹14,000/month total)</li>
@@ -1553,6 +2365,21 @@ export const CreditCheck: React.FC<CreditCheckProps> = ({
                 {scenario === 'climate_adaptive' && (
                   <>
                     <li className="text-red-800">• None significant</li>
+                  </>
+                )}
+                {scenario === 'sri_lanka_climate_farmer' && (
+                  <>
+                    <li className="text-red-800">• One weak harvest would reduce buffer without adaptive structuring</li>
+                  </>
+                )}
+                {scenario === 'africa_agri_alt_only' && (
+                  <>
+                    <li className="text-red-800">• No transaction data available — full reliance on alt-data income estimate</li>
+                  </>
+                )}
+                {scenario === 'africa_agri_enhanced' && (
+                  <>
+                    <li className="text-red-800">• None identified</li>
                   </>
                 )}
                 {scenario === 'bank_rejection' && (
@@ -1608,6 +2435,51 @@ export const CreditCheck: React.FC<CreditCheckProps> = ({
                       <span className="text-green-600">₹{((application.bank_statement_data?.inflows?.business ?? 85000) + (application.bank_statement_data?.inflows?.salary ?? 45000)).toLocaleString('en-IN')}</span>
                     </div>
                   </>
+                ) : scenario === 'sri_lanka_climate_farmer' ? (
+                  <>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Paddy Sales</span>
+                      <span className="font-medium text-green-600">{formatCurrency(application.bank_statement_data?.inflows?.agri)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Other Farm Income</span>
+                      <span className="font-medium text-green-600">{formatCurrency(application.bank_statement_data?.inflows?.other)}</span>
+                    </div>
+                    <div className="flex justify-between font-semibold border-t pt-2">
+                      <span className="text-gray-900">Total Household Income</span>
+                      <span className="text-green-600">{formatCurrency((application.bank_statement_data?.inflows?.agri ?? 0) + (application.bank_statement_data?.inflows?.other ?? 0))}</span>
+                    </div>
+                  </>
+                ) : scenario === 'africa_agri_alt_only' ? (
+                  <>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Bank/M-Pesa Inflows</span>
+                      <span className="font-medium text-gray-400">N/A — no account</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Estimated Household Income</span>
+                      <span className="font-medium text-green-600">{formatCurrency(application.bank_statement_data?.monthly_household_income ?? 22000)}</span>
+                    </div>
+                    <div className="flex justify-between font-semibold border-t pt-2">
+                      <span className="text-gray-900">Income Source</span>
+                      <span className="text-orange-600">Alt-data estimate only</span>
+                    </div>
+                  </>
+                ) : scenario === 'africa_agri_enhanced' ? (
+                  <>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Coffee Sales</span>
+                      <span className="font-medium text-green-600">{formatCurrency(application.bank_statement_data?.inflow_sources?.coffee_sales ?? 28000)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">M-Pesa Receipts</span>
+                      <span className="font-medium text-green-600">{formatCurrency(application.bank_statement_data?.inflow_sources?.mpesa_receipts ?? 10000)}</span>
+                    </div>
+                    <div className="flex justify-between font-semibold border-t pt-2">
+                      <span className="text-gray-900">Total Monthly Inflow</span>
+                      <span className="text-green-600">{formatCurrency(application.bank_statement_data?.average_monthly_inflow ?? 38000)}</span>
+                    </div>
+                  </>
                 ) : (
                   <>
                     <div className="flex justify-between">
@@ -1630,22 +2502,56 @@ export const CreditCheck: React.FC<CreditCheckProps> = ({
             <div className="bg-red-50 p-4 rounded-lg">
               <h4 className="font-semibold text-red-900 mb-3">Monthly Outflows</h4>
               <div className="space-y-2 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-gray-600">EMI/Loan Payments</span>
-                  <span className="font-medium text-red-600">₹{(application.bank_statement_data?.outflows?.emi ?? 4200).toLocaleString('en-IN')}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Utilities & Bills</span>
-                  <span className="font-medium text-red-600">₹{(application.bank_statement_data?.outflows?.utilities ?? 6200).toLocaleString('en-IN')}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Other Debits</span>
-                  <span className="font-medium text-red-600">₹{(application.bank_statement_data?.outflows?.other ?? 18300).toLocaleString('en-IN')}</span>
-                </div>
-                <div className="flex justify-between font-semibold border-t pt-2">
-                  <span className="text-gray-900">Total Outflows</span>
-                  <span className="text-red-600">₹{((application.bank_statement_data?.outflows?.emi ?? 4200) + (application.bank_statement_data?.outflows?.utilities ?? 6200) + (application.bank_statement_data?.outflows?.other ?? 18300)).toLocaleString('en-IN')}</span>
-                </div>
+                {isAfricaAltOnly ? (
+                  <>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Debt Repayments</span>
+                      <span className="font-medium text-gray-400">N/A</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Other Outflows</span>
+                      <span className="font-medium text-gray-400">N/A</span>
+                    </div>
+                    <div className="flex justify-between font-semibold border-t pt-2">
+                      <span className="text-gray-900">Total Outflows</span>
+                      <span className="text-gray-400">N/A — no account</span>
+                    </div>
+                  </>
+                ) : isAfricaEnhanced ? (
+                  <>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Debt Repayments</span>
+                      <span className="font-medium text-red-600">{formatCurrency(application.bank_statement_data?.monthly_debt_repayments ?? 5500)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Other Outflows</span>
+                      <span className="font-medium text-red-600">{formatCurrency((application.bank_statement_data?.average_monthly_outflow ?? 21000) - (application.bank_statement_data?.monthly_debt_repayments ?? 5500))}</span>
+                    </div>
+                    <div className="flex justify-between font-semibold border-t pt-2">
+                      <span className="text-gray-900">Total Outflows</span>
+                      <span className="text-red-600">{formatCurrency(application.bank_statement_data?.average_monthly_outflow ?? 21000)}</span>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">EMI/Loan Payments</span>
+                      <span className="font-medium text-red-600">{formatCurrency(application.bank_statement_data?.outflows?.emi ?? 4200)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Utilities & Bills</span>
+                      <span className="font-medium text-red-600">{formatCurrency(application.bank_statement_data?.outflows?.utilities ?? 6200)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Other Debits</span>
+                      <span className="font-medium text-red-600">{formatCurrency(application.bank_statement_data?.outflows?.other ?? 18300)}</span>
+                    </div>
+                    <div className="flex justify-between font-semibold border-t pt-2">
+                      <span className="text-gray-900">Total Outflows</span>
+                      <span className="text-red-600">{formatCurrency((application.bank_statement_data?.outflows?.emi ?? 4200) + (application.bank_statement_data?.outflows?.utilities ?? 6200) + (application.bank_statement_data?.outflows?.other ?? 18300))}</span>
+                    </div>
+                  </>
+                )}
               </div>
             </div>
 
@@ -1654,7 +2560,9 @@ export const CreditCheck: React.FC<CreditCheckProps> = ({
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between">
                   <span className="text-gray-600">Avg Monthly Balance</span>
-                  <span className="font-medium text-blue-600">₹{(application.bank_statement_data?.insights?.avg_balance ?? 12000).toLocaleString('en-IN')}</span>
+                  <span className="font-medium text-blue-600">
+                    {isAfricaAltOnly ? 'N/A' : isAfricaEnhanced ? formatCurrency(application.bank_statement_data?.average_balance ?? 28000) : formatCurrency(application.bank_statement_data?.insights?.avg_balance ?? 12000)}
+                  </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-600">Disposable Income</span>
@@ -1663,18 +2571,27 @@ export const CreditCheck: React.FC<CreditCheckProps> = ({
                       ? `₹${(((application.bank_statement_data?.inflows?.daily_wages ?? 15000) + (application.bank_statement_data?.inflows?.other ?? 2500)) - ((application.bank_statement_data?.outflows?.emi ?? 750) + (application.bank_statement_data?.outflows?.utilities ?? 3200) + (application.bank_statement_data?.outflows?.other ?? 8500))).toLocaleString('en-IN')}`
                       : scenario === 'prime_customer'
                       ? `₹${(((application.bank_statement_data?.inflows?.business ?? 85000) + (application.bank_statement_data?.inflows?.salary ?? 45000)) - ((application.bank_statement_data?.outflows?.emi ?? 22000) + (application.bank_statement_data?.outflows?.utilities ?? 8500) + (application.bank_statement_data?.outflows?.other ?? 28000))).toLocaleString('en-IN')}`
+                      : scenario === 'sri_lanka_climate_farmer'
+                      ? formatCurrency(((application.bank_statement_data?.inflows?.agri ?? 0) + (application.bank_statement_data?.inflows?.other ?? 0)) - ((application.bank_statement_data?.outflows?.emi ?? 0) + (application.bank_statement_data?.outflows?.utilities ?? 0) + (application.bank_statement_data?.outflows?.other ?? 0)))
+                      : scenario === 'africa_agri_alt_only'
+                      ? 'N/A'
+                      : scenario === 'africa_agri_enhanced'
+                      ? formatCurrency((application.bank_statement_data?.average_monthly_inflow ?? 38000) - (application.bank_statement_data?.average_monthly_outflow ?? 21000))
                       : `₹${(((application.bank_statement_data?.inflows?.agri ?? 28000) + (application.bank_statement_data?.inflows?.dairy ?? 8000)) - ((application.bank_statement_data?.outflows?.emi ?? 4200) + (application.bank_statement_data?.outflows?.utilities ?? 6200) + (application.bank_statement_data?.outflows?.other ?? 18300))).toLocaleString('en-IN')}`
                     }
                   </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-600">Debt-to-Income Ratio</span>
-                  <span className="font-medium text-blue-600">{application.bank_statement_data?.insights?.dti ?? '11.7%'}
+                  <span className="font-medium text-blue-600">
+                    {isAfricaAltOnly ? 'N/A' : isAfricaEnhanced ? '13%' : (application.bank_statement_data?.insights?.dti ?? '11.7%')}
                   </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-600">Account Stability</span>
-                  <span className="font-medium text-green-600">{application.bank_statement_data?.insights?.stability ?? 'High'}</span>
+                  <span className="font-medium text-green-600">
+                    {isAfricaScenario ? (application.bank_statement_data?.account_stability ?? 'N/A') : (application.bank_statement_data?.insights?.stability ?? 'High')}
+                  </span>
                 </div>
               </div>
             </div>
@@ -1684,24 +2601,25 @@ export const CreditCheck: React.FC<CreditCheckProps> = ({
             <h4 className="font-semibold text-gray-900 mb-2">Transaction Patterns</h4>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
               <div className="text-center">
-                <div className="text-2xl font-bold text-green-600">{scenario === 'young_professional' ? '68%' : '94%'}</div>
+                <div className="text-2xl font-bold text-green-600">{scenario === 'young_professional' ? '68%' : scenario === 'sri_lanka_climate_farmer' ? '72%' : isAfricaAltOnly ? 'N/A' : isAfricaEnhanced ? '78%' : '94%'}</div>
                 <div className="text-gray-600">Regular Deposits</div>
               </div>
               <div className="text-center">
-                <div className="text-2xl font-bold text-blue-600">{scenario === 'young_professional' ? '₹1.1L' : '₹1.2L'}</div>
+                <div className="text-2xl font-bold text-blue-600">{scenario === 'young_professional' ? '₹1.1L' : scenario === 'sri_lanka_climate_farmer' ? 'LKR 7.5L' : isAfricaAltOnly ? 'N/A' : isAfricaEnhanced ? 'KES 228K' : '₹1.2L'}</div>
                 <div className="text-gray-600">6-Month Volume</div>
               </div>
               <div className="text-center">
-                <div className="text-2xl font-bold text-purple-600">2</div>
+                <div className="text-2xl font-bold text-purple-600">{isAfricaAltOnly ? '0' : isAfricaEnhanced ? '1' : '2'}</div>
                 <div className="text-gray-600">Bank Accounts</div>
               </div>
               <div className="text-center">
-                <div className="text-2xl font-bold text-green-600">0</div>
+                <div className="text-2xl font-bold text-green-600">{scenario === 'sri_lanka_climate_farmer' ? '1' : isAfricaAltOnly ? 'N/A' : '0'}</div>
                 <div className="text-gray-600">Irregular Transactions</div>
               </div>
             </div>
           </div>
         </div>
+        )}
       </div>
 
       {application.credit_decision === 'review' && (

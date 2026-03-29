@@ -18,6 +18,16 @@ export const DocumentUpload: React.FC<DocumentUploadProps> = ({
   const [uploading, setUploading] = useState(false);
   const [panUploaded, setPanUploaded] = useState(!!application.pan_uploaded);
   const [aadhaarUploaded, setAadhaarUploaded] = useState(!!application.aadhaar_uploaded);
+  const scenario = (application as any).demo_scenario_id as string | undefined;
+  const isSriLankaScenario = scenario === 'sri_lanka_climate_farmer';
+  const secondaryDocLabel = isSriLankaScenario ? 'Farmer Registration' : 'PAN Card';
+  const secondaryDocDescription = isSriLankaScenario ? 'Agriculture or livelihood reference document' : 'Permanent Account Number';
+  const primaryDocLabel = isSriLankaScenario ? 'National Identity Card' : 'Aadhaar Card';
+  const primaryDocDescription = isSriLankaScenario ? 'Government-issued primary identity document' : 'Unique Identification Number';
+  const secondaryDocFieldLabel = isSriLankaScenario ? 'Farmer Registration Number:' : 'PAN Number:';
+  const secondaryDocNameLabel = isSriLankaScenario ? 'Name on Registration:' : 'Name on PAN:';
+  const primaryDocFieldLabel = isSriLankaScenario ? 'NIC Number:' : 'Aadhaar Number:';
+  const primaryDocNameLabel = isSriLankaScenario ? 'Name on NIC:' : 'Name on Aadhaar:';
 
   // Auto-simulate upload on mount if not already done
   useEffect(() => {
@@ -55,11 +65,15 @@ export const DocumentUpload: React.FC<DocumentUploadProps> = ({
     <div>
       <div className="mb-8">
         <h2 className="text-3xl font-bold text-gray-900 mb-2">Document Upload</h2>
-        <p className="text-base text-gray-600">Upload PAN Card and Aadhaar Card for verification</p>
+        <p className="text-base text-gray-600">
+          {isSriLankaScenario
+            ? 'Upload the farmer registration document and National Identity Card for verification'
+            : 'Upload PAN Card and Aadhaar Card for verification'}
+        </p>
       </div>
 
       <div className="space-y-6">
-        {/* PAN Card Upload */}
+        {/* Secondary document upload */}
         <div className="bg-white p-6 rounded-lg shadow-sm border-2 border-gray-200">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-3">
@@ -69,8 +83,8 @@ export const DocumentUpload: React.FC<DocumentUploadProps> = ({
                 <span className="text-2xl">{panUploaded ? '✓' : '📄'}</span>
               </div>
               <div>
-                <h3 className="text-lg font-semibold text-gray-900">PAN Card</h3>
-                <p className="text-sm text-gray-600">Permanent Account Number</p>
+                <h3 className="text-lg font-semibold text-gray-900">{secondaryDocLabel}</h3>
+                <p className="text-sm text-gray-600">{secondaryDocDescription}</p>
               </div>
             </div>
             {panUploaded && (
@@ -85,7 +99,7 @@ export const DocumentUpload: React.FC<DocumentUploadProps> = ({
               <div className="flex items-center gap-3">
                 <div className="w-6 h-6 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
                 <div>
-                  <p className="text-sm font-medium text-blue-900">Uploading PAN Card...</p>
+                  <p className="text-sm font-medium text-blue-900">Uploading {secondaryDocLabel}...</p>
                   <p className="text-xs text-blue-700">Verifying document authenticity</p>
                 </div>
               </div>
@@ -96,11 +110,11 @@ export const DocumentUpload: React.FC<DocumentUploadProps> = ({
             <div className="mt-4 p-4 bg-green-50 rounded-lg border border-green-200">
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div>
-                  <span className="text-gray-600">PAN Number:</span>
+                  <span className="text-gray-600">{secondaryDocFieldLabel}</span>
                   <span className="ml-2 font-semibold text-gray-900">{application.applicant_pan}</span>
                 </div>
                 <div>
-                  <span className="text-gray-600">Name on PAN:</span>
+                  <span className="text-gray-600">{secondaryDocNameLabel}</span>
                   <span className="ml-2 font-semibold text-gray-900">{application.applicant_name}</span>
                 </div>
                 <div>
@@ -116,7 +130,7 @@ export const DocumentUpload: React.FC<DocumentUploadProps> = ({
           )}
         </div>
 
-        {/* Aadhaar Card Upload */}
+        {/* Primary document upload */}
         <div className="bg-white p-6 rounded-lg shadow-sm border-2 border-gray-200">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-3">
@@ -126,8 +140,8 @@ export const DocumentUpload: React.FC<DocumentUploadProps> = ({
                 <span className="text-2xl">{aadhaarUploaded ? '✓' : '📄'}</span>
               </div>
               <div>
-                <h3 className="text-lg font-semibold text-gray-900">Aadhaar Card</h3>
-                <p className="text-sm text-gray-600">Unique Identification Number</p>
+                <h3 className="text-lg font-semibold text-gray-900">{primaryDocLabel}</h3>
+                <p className="text-sm text-gray-600">{primaryDocDescription}</p>
               </div>
             </div>
             {aadhaarUploaded && (
@@ -142,7 +156,7 @@ export const DocumentUpload: React.FC<DocumentUploadProps> = ({
               <div className="flex items-center gap-3">
                 <div className="w-6 h-6 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
                 <div>
-                  <p className="text-sm font-medium text-blue-900">Uploading Aadhaar Card...</p>
+                  <p className="text-sm font-medium text-blue-900">Uploading {primaryDocLabel}...</p>
                   <p className="text-xs text-blue-700">Verifying document authenticity</p>
                 </div>
               </div>
@@ -153,11 +167,11 @@ export const DocumentUpload: React.FC<DocumentUploadProps> = ({
             <div className="mt-4 p-4 bg-green-50 rounded-lg border border-green-200">
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div>
-                  <span className="text-gray-600">Aadhaar Number:</span>
+                  <span className="text-gray-600">{primaryDocFieldLabel}</span>
                   <span className="ml-2 font-semibold text-gray-900">{application.applicant_aadhaar}</span>
                 </div>
                 <div>
-                  <span className="text-gray-600">Name on Aadhaar:</span>
+                  <span className="text-gray-600">{primaryDocNameLabel}</span>
                   <span className="ml-2 font-semibold text-gray-900">{application.applicant_name}</span>
                 </div>
                 <div>

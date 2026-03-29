@@ -81,7 +81,7 @@ function createMockClient() {
                     updated_at: now,
                     current_stage: 'lead_registration',
                     status: 'draft',
-                    loan_officer: 'Rajesh Verma',
+                    loan_officer: 'Operations Officer',
                     bureau_otp_verified: false,
                     bank_otp_verified: false,
                     ...base,
@@ -147,6 +147,7 @@ export type LoanApplication = {
   applicant_pan?: string;
   applicant_aadhaar?: string;
   demo_scenario_id?: string;
+  demo_region?: string;
   coapplicant_name?: string;
   coapplicant_phone?: string;
   coapplicant_email?: string;

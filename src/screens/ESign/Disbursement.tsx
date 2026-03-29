@@ -18,14 +18,20 @@ export const Disbursement: React.FC<DisbursementProps> = ({
 }) => {
   const [selectedAccountId, setSelectedAccountId] = useState<string>('');
   const [processing, setProcessing] = useState(false);
+  const scenario = (application as any).demo_scenario_id as string | undefined;
+  const isSriLankaScenario = scenario === 'sri_lanka_climate_farmer';
+  const isAfricaScenario = scenario?.startsWith('africa_');
+  const currencyLocale = isAfricaScenario ? 'en-KE' : isSriLankaScenario ? 'en-LK' : 'en-IN';
+  const currencySymbol = isAfricaScenario ? 'KES ' : isSriLankaScenario ? 'LKR ' : '₹';
+  const bankCodeLabel = isAfricaScenario ? 'Bank Code' : isSriLankaScenario ? 'Bank Code' : 'IFSC Code';
+  const bankCodePrefix = isAfricaScenario ? 'Code' : isSriLankaScenario ? 'Code' : 'IFSC';
+  const formatCurrency = (value?: number) => `${currencySymbol}${(value || 0).toLocaleString(currencyLocale)}`;
 
   const availableAccounts = application.available_bank_accounts || [];
   const selectedAccount = availableAccounts.find(acc => acc.id === selectedAccountId);
 
-  // Reset penny drop and agreement status when first entering this page
   React.useEffect(() => {
     if (application.penny_drop_status === 'verified' && !selectedAccountId) {
-      // Clear pre-completed statuses for fresh demo
       onUpdate({
         penny_drop_status: undefined,
         penny_drop_verified_at: undefined,
@@ -35,8 +41,24 @@ export const Disbursement: React.FC<DisbursementProps> = ({
     }
   }, []);
 
-  const handleAccountSelection = (accountId: string) => {
+  const handleAccountSelection = async (accountId: string) => {
     setSelectedAccountId(accountId);
+
+    if (isSriLankaScenario || isAfricaScenario) {
+      const account = availableAccounts.find(acc => acc.id === accountId);
+      if (account) {
+        setProcessing(true);
+        await new Promise(resolve => setTimeout(resolve, 800));
+        await onUpdate({
+          account_number: account.account_number,
+          ifsc_code: account.ifsc_code,
+          bank_name: account.bank_name,
+          penny_drop_status: 'verified',
+          penny_drop_verified_at: new Date().toISOString(),
+        });
+        setProcessing(false);
+      }
+    }
   };
 
   const runPennyDrop = async () => {
@@ -93,7 +115,13 @@ export const Disbursement: React.FC<DisbursementProps> = ({
       <StepNarration
         step={5}
         title="Loan Disbursement"
-        description="After Kaleidofin returns the credit decision, the loan operations officer disburses the loan in a few simple steps. This includes account verification, agreement signing, and immediate fund transfer to the borrower's account."
+        description={
+          isAfricaScenario
+            ? "After Ki Score returns the credit decision, the loan officer confirms the disbursement account, captures the loan agreement, and triggers fund transfer to the borrower."
+            : isSriLankaScenario
+            ? "After Kaleidofin returns the credit decision, the loan operations officer confirms the beneficiary account, captures the digital loan agreement, and triggers fund transfer via CEFTS."
+            : "After Kaleidofin returns the credit decision, the loan operations officer disburses the loan in a few simple steps. This includes account verification, agreement signing, and immediate fund transfer to the borrower's account."
+        }
         icon="💰"
         color="emerald"
       />
@@ -109,7 +137,7 @@ export const Disbursement: React.FC<DisbursementProps> = ({
             <div className="bg-white/10 backdrop-blur-sm p-4 rounded-lg">
               <p className="text-sm text-white/70 mb-1">Loan Amount</p>
               <p className="text-3xl font-bold">
-                ₹{application.recommended_amount?.toLocaleString('en-IN')}
+                {formatCurrency(application.recommended_amount)}
               </p>
             </div>
             <div className="bg-white/10 backdrop-blur-sm p-4 rounded-lg">
@@ -131,7 +159,9 @@ export const Disbursement: React.FC<DisbursementProps> = ({
 
         <div className="bg-white p-6 rounded-lg shadow-sm">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-gray-900">Bank Account Selection</h3>
+            <h3 className="text-lg font-semibold text-gray-900">
+              {(isSriLankaScenario || isAfricaScenario) ? 'Beneficiary Account' : 'Bank Account Selection'}
+            </h3>
             {availableAccounts.length > 0 && (
               <span className="px-3 py-1 bg-blue-100 text-blue-800 text-xs font-medium rounded">
                 {availableAccounts.length} accounts available
@@ -148,8 +178,12 @@ export const Disbursement: React.FC<DisbursementProps> = ({
                       ✓
                     </div>
                     <div className="flex-1">
-                      <p className="font-semibold text-gray-900">Account Verified</p>
-                      <p className="text-sm text-gray-600">Penny drop test completed successfully</p>
+                      <p className="font-semibold text-gray-900">
+                        {(isSriLankaScenario || isAfricaScenario) ? 'Account Confirmed' : 'Account Verified'}
+                      </p>
+                      <p className="text-sm text-gray-600">
+                        {(isSriLankaScenario || isAfricaScenario) ? 'Beneficiary account confirmed for disbursement' : 'Penny drop test completed successfully'}
+                      </p>
                     </div>
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
@@ -158,7 +192,7 @@ export const Disbursement: React.FC<DisbursementProps> = ({
                       <p className="font-medium text-gray-900">{selectedAccount?.account_number}</p>
                     </div>
                     <div>
-                      <p className="text-gray-600">IFSC Code</p>
+                      <p className="text-gray-600">{bankCodeLabel}</p>
                       <p className="font-medium text-gray-900">{selectedAccount?.ifsc_code}</p>
                     </div>
                     <div className="col-span-2">
@@ -171,7 +205,7 @@ export const Disbursement: React.FC<DisbursementProps> = ({
                 <div className="space-y-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-3">
-                      Select Bank Account for Disbursement *
+                      {(isSriLankaScenario || isAfricaScenario) ? 'Select Beneficiary Account *' : 'Select Bank Account for Disbursement *'}
                     </label>
                     <div className="space-y-2">
                       {availableAccounts.map((account) => (
@@ -195,10 +229,10 @@ export const Disbursement: React.FC<DisbursementProps> = ({
                                 </span>
                               </div>
                               <p className="text-sm text-gray-600 mt-1">{account.account_number}</p>
-                              <p className="text-xs text-gray-500">IFSC: {account.ifsc_code}</p>
+                              <p className="text-xs text-gray-500">{bankCodePrefix}: {account.ifsc_code}</p>
                             </div>
                             <div className="text-right">
-                              <p className="text-sm font-medium text-gray-900">₹{account.balance.toLocaleString('en-IN')}</p>
+                              <p className="text-sm font-medium text-gray-900">{formatCurrency(account.balance)}</p>
                               <p className="text-xs text-gray-500">Available Balance</p>
                             </div>
                           </div>
@@ -206,13 +240,21 @@ export const Disbursement: React.FC<DisbursementProps> = ({
                       ))}
                     </div>
                   </div>
-                  <Button
-                    onClick={runPennyDrop}
-                    disabled={processing || !selectedAccountId}
-                    className="bg-[#11287c] hover:bg-[#1e3a8a] text-white w-full"
-                  >
-                    {processing ? 'Verifying...' : 'Penny Drop for Bank Account Verification'}
-                  </Button>
+                  {!isSriLankaScenario && !isAfricaScenario && (
+                    <Button
+                      onClick={runPennyDrop}
+                      disabled={processing || !selectedAccountId}
+                      className="bg-[#11287c] hover:bg-[#1e3a8a] text-white w-full"
+                    >
+                      {processing ? 'Verifying...' : 'Penny Drop for Bank Account Verification'}
+                    </Button>
+                  )}
+                  {(isSriLankaScenario || isAfricaScenario) && processing && (
+                    <div className="flex items-center gap-3 p-3 bg-blue-50 rounded-lg">
+                      <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+                      <p className="text-sm text-gray-700">Confirming account...</p>
+                    </div>
+                  )}
                 </div>
               )}
             </>
@@ -245,7 +287,7 @@ export const Disbursement: React.FC<DisbursementProps> = ({
               <div>
                 <p className="font-semibold text-gray-900">Agreement Signed</p>
                 <p className="text-sm text-gray-600">
-                  Signed on {new Date(application.loan_agreement_signed_at!).toLocaleString('en-IN')}
+                  Signed on {new Date(application.loan_agreement_signed_at!).toLocaleString(currencyLocale)}
                 </p>
               </div>
             </div>
@@ -256,7 +298,7 @@ export const Disbursement: React.FC<DisbursementProps> = ({
                   By signing this agreement, the borrower agrees to:
                 </p>
                 <ul className="text-xs text-gray-600 space-y-1 list-disc list-inside">
-                  <li>Repay the loan amount of ₹{application.recommended_amount?.toLocaleString('en-IN')} over {application.recommended_term} months</li>
+                  <li>Repay the loan amount of {formatCurrency(application.recommended_amount)} over {application.recommended_term} months</li>
                   <li>Pay interest at {application.recommended_apr}% APR</li>
                   <li>Comply with all terms and conditions</li>
                   <li>Provide accurate information</li>
@@ -267,10 +309,12 @@ export const Disbursement: React.FC<DisbursementProps> = ({
                 disabled={processing || !isAccountVerified}
                 className="bg-[#11287c] hover:bg-[#1e3a8a] text-white w-full"
               >
-                {processing ? 'Signing...' : 'Sign Loan Agreement'}
+                {processing ? 'Signing...' : (isSriLankaScenario || isAfricaScenario) ? 'Sign Loan Agreement Digitally' : 'Sign Loan Agreement'}
               </Button>
               {!isAccountVerified && (
-                <p className="text-xs text-yellow-600 mt-2">Please verify account first</p>
+                <p className="text-xs text-yellow-600 mt-2">
+                  {(isSriLankaScenario || isAfricaScenario) ? 'Please select a beneficiary account first' : 'Please verify account first'}
+                </p>
               )}
             </div>
           )}
@@ -284,13 +328,13 @@ export const Disbursement: React.FC<DisbursementProps> = ({
               </div>
               <h3 className="text-3xl font-bold text-green-900 mb-3">Loan Disbursed Successfully!</h3>
               <p className="text-lg text-green-800 mb-6">
-                ₹{application.disbursed_amount?.toLocaleString('en-IN')} has been credited to the beneficiary account
+                {formatCurrency(application.disbursed_amount)} has been credited to the beneficiary account
               </p>
               <div className="bg-white p-6 rounded-xl inline-block shadow-md border border-green-200 mb-6">
                 <p className="text-sm text-gray-600 mb-1">Transaction Reference</p>
                 <p className="text-xl font-mono font-bold text-gray-900">{application.disbursement_reference}</p>
                 <p className="text-sm text-gray-500 mt-3">
-                  Disbursed on {new Date(application.disbursed_at!).toLocaleString('en-IN')}
+                  Disbursed on {new Date(application.disbursed_at!).toLocaleString(currencyLocale)}
                 </p>
               </div>
               <div className="mt-8">
@@ -314,7 +358,7 @@ export const Disbursement: React.FC<DisbursementProps> = ({
               disabled={processing || !isAccountVerified || !isAgreementSigned}
               className="bg-[#11287c] hover:bg-[#1e3a8a] text-white w-full py-3 text-lg font-semibold"
             >
-              {processing ? 'Processing Disbursement...' : `Disburse ₹${application.recommended_amount?.toLocaleString('en-IN')}`}
+              {processing ? 'Processing Disbursement...' : `Disburse ${formatCurrency(application.recommended_amount)}`}
             </Button>
             {(!isAccountVerified || !isAgreementSigned) && (
               <p className="text-xs text-yellow-600 mt-2">

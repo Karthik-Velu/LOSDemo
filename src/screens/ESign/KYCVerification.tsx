@@ -27,6 +27,15 @@ export const KYCVerification: React.FC<KYCVerificationProps> = ({
   
   // Get scenario from application
   const scenario = (application as any).demo_scenario_id as string | undefined;
+  const isSriLankaScenario = scenario === 'sri_lanka_climate_farmer';
+  const isAfricaScenario = scenario?.startsWith('africa_');
+  const primaryDocLabel = isAfricaScenario ? 'Kenya National ID' : isSriLankaScenario ? 'National Identity Card' : 'Aadhaar Card';
+  const primaryDocShortLabel = isAfricaScenario ? 'National ID' : isSriLankaScenario ? 'NIC' : 'Aadhaar';
+  const primaryDocDescription = isAfricaScenario ? 'Kenya National ID Document' : isSriLankaScenario ? 'National ID Document' : 'Unique ID Document';
+  const secondaryDocLabel = isAfricaScenario ? 'KRA PIN Certificate' : isSriLankaScenario ? 'Farmer Registration' : 'PAN Card';
+  const secondaryDocShortLabel = isAfricaScenario ? 'KRA PIN' : isSriLankaScenario ? 'Farmer Reg.' : 'PAN';
+  const secondaryDocDescription = isAfricaScenario ? 'Kenya Revenue Authority tax certificate' : isSriLankaScenario ? 'Agrarian registration document' : 'Tax Identification Document';
+  const secondaryDocVerificationType = isAfricaScenario ? 'Tax ID Proof' : isSriLankaScenario ? 'Farmer profile proof' : 'Tax ID Proof';
 
   // Check if application is already rejected for fraud
   // Check both JSON format and legacy text format
@@ -108,6 +117,13 @@ export const KYCVerification: React.FC<KYCVerificationProps> = ({
             'Overall identity match score: 43% (threshold: 85%)'
           ]
         });
+      } else if (scenario === 'sri_lanka_climate_farmer') {
+        console.log('Sri Lanka farmer scenario - deterministic low-medium risk');
+        simulatedScore = 29;
+      } else if (scenario === 'africa_agri_alt_only') {
+        simulatedScore = 22;
+      } else if (scenario === 'africa_agri_enhanced') {
+        simulatedScore = 18;
       } else {
         // All other scenarios pass KYC with low fraud scores
         console.log('Normal scenario - will pass KYC');
@@ -191,7 +207,7 @@ export const KYCVerification: React.FC<KYCVerificationProps> = ({
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
                 <div className="flex-1">
                   <p className="font-medium text-gray-900">
-                    {!panUploaded ? 'Uploading PAN Card...' : 'Uploading Aadhaar Card...'}
+                    {!panUploaded ? `Uploading ${secondaryDocLabel}...` : `Uploading ${primaryDocLabel}...`}
                   </p>
                   <p className="text-sm text-gray-600">Please wait while we verify your documents</p>
                 </div>
@@ -209,8 +225,8 @@ export const KYCVerification: React.FC<KYCVerificationProps> = ({
                     )}
                   </div>
                   <div className="flex-1">
-                    <h4 className="font-semibold text-gray-900">PAN Card</h4>
-                    <p className="text-xs text-gray-600">Tax Identification Document</p>
+                    <h4 className="font-semibold text-gray-900">{secondaryDocLabel}</h4>
+                    <p className="text-xs text-gray-600">{secondaryDocDescription}</p>
                   </div>
                 </div>
                 {panUploaded && (
@@ -232,8 +248,8 @@ export const KYCVerification: React.FC<KYCVerificationProps> = ({
                     )}
                   </div>
                   <div className="flex-1">
-                    <h4 className="font-semibold text-gray-900">Aadhaar Card</h4>
-                    <p className="text-xs text-gray-600">Unique ID Document</p>
+                    <h4 className="font-semibold text-gray-900">{primaryDocLabel}</h4>
+                    <p className="text-xs text-gray-600">{primaryDocDescription}</p>
                   </div>
                 </div>
                 {aadhaarUploaded && (
@@ -366,7 +382,39 @@ export const KYCVerification: React.FC<KYCVerificationProps> = ({
                             <>
                               <li className="text-yellow-800 flex items-start gap-2">
                                 <span className="text-yellow-600 mt-0.5">•</span>
-                                <span>Agricultural income subject to seasonal variation</span>
+                              <span>{isSriLankaScenario ? 'Rain-fed paddy income remains seasonal and harvest-linked' : 'Agricultural income subject to seasonal variation'}</span>
+                              </li>
+                            </>
+                          )}
+                          {scenario === 'sri_lanka_climate_farmer' && (
+                            <>
+                              <li className="text-yellow-800 flex items-start gap-2">
+                                <span className="text-yellow-600 mt-0.5">•</span>
+                                <span>Dry-zone farm cashflows remain seasonal and harvest-linked</span>
+                              </li>
+                              <li className="text-yellow-800 flex items-start gap-2">
+                                <span className="text-yellow-600 mt-0.5">•</span>
+                                <span>First application to this lender — no prior relationship</span>
+                              </li>
+                            </>
+                          )}
+                          {scenario === 'africa_agri_alt_only' && (
+                            <>
+                              <li className="text-yellow-800 flex items-start gap-2">
+                                <span className="text-yellow-600 mt-0.5">•</span>
+                                <span>No formal financial footprint — thin-file borrower</span>
+                              </li>
+                              <li className="text-yellow-800 flex items-start gap-2">
+                                <span className="text-yellow-600 mt-0.5">•</span>
+                                <span>First application to this lender — no prior relationship</span>
+                              </li>
+                            </>
+                          )}
+                          {scenario === 'africa_agri_enhanced' && (
+                            <>
+                              <li className="text-yellow-800 flex items-start gap-2">
+                                <span className="text-yellow-600 mt-0.5">•</span>
+                                <span>Agricultural income subject to seasonal coffee harvest cycles</span>
                               </li>
                             </>
                           )}
@@ -530,11 +578,11 @@ export const KYCVerification: React.FC<KYCVerificationProps> = ({
               <p className="font-medium text-gray-900">{application.applicant_phone}</p>
             </div>
             <div>
-              <p className="text-gray-600">PAN</p>
+              <p className="text-gray-600">{secondaryDocShortLabel}</p>
               <p className="font-medium text-gray-900">{application.applicant_pan || 'Not provided'}</p>
             </div>
             <div>
-              <p className="text-gray-600">Aadhaar</p>
+              <p className="text-gray-600">{primaryDocShortLabel}</p>
               <p className="font-medium text-gray-900">{application.applicant_aadhaar || 'Not provided'}</p>
             </div>
           </div>
@@ -553,11 +601,11 @@ export const KYCVerification: React.FC<KYCVerificationProps> = ({
                 <p className="font-medium text-gray-900">{application.coapplicant_phone}</p>
               </div>
               <div>
-                <p className="text-gray-600">PAN</p>
+                <p className="text-gray-600">{secondaryDocShortLabel}</p>
                 <p className="font-medium text-gray-900">{application.coapplicant_pan || 'Not provided'}</p>
               </div>
               <div>
-                <p className="text-gray-600">Aadhaar</p>
+                <p className="text-gray-600">{primaryDocShortLabel}</p>
                 <p className="font-medium text-gray-900">{application.coapplicant_aadhaar || 'Not provided'}</p>
               </div>
             </div>
@@ -578,7 +626,7 @@ export const KYCVerification: React.FC<KYCVerificationProps> = ({
                     <span className="text-green-600 text-xl">✓</span>
                   </div>
                   <div>
-                    <p className="font-semibold text-gray-900">Aadhaar Card</p>
+                    <p className="font-semibold text-gray-900">{primaryDocLabel}</p>
                     <p className="text-xs text-gray-600">Identity Proof</p>
                   </div>
                 </div>
@@ -590,8 +638,8 @@ export const KYCVerification: React.FC<KYCVerificationProps> = ({
                     <span className="text-green-600 text-xl">✓</span>
                   </div>
                   <div>
-                    <p className="font-semibold text-gray-900">PAN Card</p>
-                    <p className="text-xs text-gray-600">Tax ID Proof</p>
+                    <p className="font-semibold text-gray-900">{secondaryDocLabel}</p>
+                    <p className="text-xs text-gray-600">{secondaryDocVerificationType}</p>
                   </div>
                 </div>
                 <span className="text-xs bg-green-600 text-white px-2 py-1 rounded font-medium">Verified</span>
@@ -604,7 +652,7 @@ export const KYCVerification: React.FC<KYCVerificationProps> = ({
                 {/* For fraud_rejection scenario, show mismatches. For all others, show perfect matches */}
                 <div className="p-3 bg-white rounded-lg border border-gray-200 shadow-sm">
                   <div className="flex items-center justify-between mb-2">
-                    <span className="font-semibold text-gray-900 text-sm">Aadhaar Card</span>
+                    <span className="font-semibold text-gray-900 text-sm">{primaryDocLabel}</span>
                     <span className={`text-xs px-2.5 py-1 rounded-full font-semibold ${
                       isFraudRejected ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'
                     }`}>
@@ -629,7 +677,7 @@ export const KYCVerification: React.FC<KYCVerificationProps> = ({
 
                 <div className="p-3 bg-white rounded-lg border border-gray-200 shadow-sm">
                   <div className="flex items-center justify-between mb-2">
-                    <span className="font-semibold text-gray-900 text-sm">PAN Card</span>
+                    <span className="font-semibold text-gray-900 text-sm">{secondaryDocLabel}</span>
                     <span className={`text-xs px-2.5 py-1 rounded-full font-semibold ${
                       isFraudRejected ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'
                     }`}>

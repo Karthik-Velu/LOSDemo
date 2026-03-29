@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { type LoanApplication } from "../../lib/supabase";
 import { Button } from "../../components/ui/button";
 import { StepNarration } from "../../components/StepNarration";
@@ -41,17 +41,85 @@ export const LeadRegistration: React.FC<LeadRegistrationProps> = ({
   });
 
   const [saving, setSaving] = useState(false);
+  const [autoFilled, setAutoFilled] = useState(false);
+  const currentScenarioId = ((formData as any).demo_scenario_id || (application as any).demo_scenario_id) as string | undefined;
+  const demoRegion = (application as any).demo_region as string | undefined;
+  const isSriLankaScenario = currentScenarioId === 'sri_lanka_climate_farmer';
+  const isAfricaScenario = currentScenarioId?.startsWith('africa_');
+
+  const primaryIdLabel = isAfricaScenario ? 'National ID / Huduma Namba' : isSriLankaScenario ? 'National Identity Card' : 'Aadhaar Number';
+  const primaryIdHint = isAfricaScenario ? '(Kenya national identity)' : isSriLankaScenario ? '(Government-issued identity)' : '(Unique ID - Government issued)';
+  const primaryIdPlaceholder = isAfricaScenario ? 'e.g., 28456123' : isSriLankaScenario ? 'e.g., 901234567V' : 'e.g., 1234 5678 9012';
+  const primaryIdHelperText = isAfricaScenario
+    ? 'Kenya National ID number used for primary identity verification'
+    : isSriLankaScenario
+    ? 'Sri Lanka NIC number used for primary identity verification'
+    : '12-digit unique identification number issued by UIDAI';
+  const secondaryIdLabel = isAfricaScenario ? 'KRA PIN' : isSriLankaScenario ? 'Farmer Registration' : 'PAN Number';
+  const secondaryIdHint = isAfricaScenario ? '(Kenya Revenue Authority tax ID)' : isSriLankaScenario ? '(Agriculture / livelihood reference)' : '(Permanent Account Number - Tax ID)';
+  const secondaryIdPlaceholder = isAfricaScenario ? 'e.g., A012345678B' : isSriLankaScenario ? 'e.g., AGR-NCP-24118' : 'e.g., ABCDE1234F';
+  const secondaryIdHelperText = isAfricaScenario
+    ? 'Kenya Revenue Authority Personal Identification Number'
+    : isSriLankaScenario
+    ? 'Farmer registration or livelihood reference used to support the agricultural profile'
+    : '10-character alphanumeric tax identifier issued by Income Tax Department';
+  const currencyLabel = isAfricaScenario ? 'KES' : isSriLankaScenario ? 'LKR' : '₹';
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const demoScenarios = [
+  const allDemoScenarios = [
+    {
+      id: 'africa_agri_alt_only',
+      title: 'Kenya Farmer (Alt Data Only)',
+      description: 'Maize farmer in Machakos — alt data decisioning, no bureau/transactions',
+      color: 'amber',
+      region: 'africa',
+      data: {
+        applicant_name: 'James Mwangi',
+        applicant_phone: '+254 712 345 678',
+        applicant_email: 'james.mwangi@email.com',
+        applicant_address: 'Kithimani Village, Yatta Sub-County, Machakos County, Kenya',
+        applicant_pan: 'A012345678B',
+        applicant_aadhaar: '28456123',
+        coapplicant_name: 'Grace Wanjiku',
+        coapplicant_phone: '+254 723 456 789',
+        coapplicant_email: 'grace.wanjiku@email.com',
+        coapplicant_address: 'Kithimani Village, Yatta Sub-County, Machakos County, Kenya',
+        coapplicant_pan: 'A098765432C',
+        coapplicant_aadhaar: '29123456',
+        requested_amount: '100000',
+      }
+    },
+    {
+      id: 'africa_agri_enhanced',
+      title: 'Kenya Farmer (Enhanced)',
+      description: 'Coffee farmer in Nyeri — alt data + bureau + M-Pesa transactions',
+      color: 'emerald',
+      region: 'africa',
+      data: {
+        applicant_name: 'Peter Kamau',
+        applicant_phone: '+254 734 567 890',
+        applicant_email: 'peter.kamau@email.com',
+        applicant_address: 'Karatina Town, Mathira Sub-County, Nyeri County, Kenya',
+        applicant_pan: 'B034567891D',
+        applicant_aadhaar: '31789012',
+        coapplicant_name: 'Mary Njeri',
+        coapplicant_phone: '+254 745 678 901',
+        coapplicant_email: 'mary.njeri@email.com',
+        coapplicant_address: 'Karatina Town, Mathira Sub-County, Nyeri County, Kenya',
+        coapplicant_pan: 'B076543210E',
+        coapplicant_aadhaar: '32456789',
+        requested_amount: '180000',
+      }
+    },
     {
       id: 'young_professional',
       title: 'Young Professional',
       description: 'Auto components factory worker, attendance-linked pay, Pune',
       color: 'blue',
+      region: 'apac',
       data: {
         applicant_name: 'Kiran Desai',
         applicant_phone: '+91 98765 43220',
@@ -73,6 +141,7 @@ export const LeadRegistration: React.FC<LeadRegistrationProps> = ({
       title: 'Climate Adaptive',
       description: 'Farmer with climate risk, adaptive terms',
       color: 'orange',
+      region: 'apac',
       data: {
         applicant_name: 'Suresh Yadav',
         applicant_phone: '+91 98765 43230',
@@ -90,10 +159,33 @@ export const LeadRegistration: React.FC<LeadRegistrationProps> = ({
       }
     },
     {
+      id: 'sri_lanka_climate_farmer',
+      title: 'Sri Lanka Farmer',
+      description: 'Dry-zone paddy farmer, climate-adaptive terms, Anuradhapura',
+      color: 'amber',
+      region: 'apac',
+      data: {
+        applicant_name: 'Nimal Bandara',
+        applicant_phone: '+94 71 234 5678',
+        applicant_email: 'nimal.bandara@email.com',
+        applicant_address: 'Ihala Puliyankulama, Kekirawa, Anuradhapura District, North Central Province, Sri Lanka',
+        applicant_pan: '901234567V',
+        applicant_aadhaar: 'AGR-NCP-24118',
+        coapplicant_name: 'Malini Bandara',
+        coapplicant_phone: '+94 77 456 7890',
+        coapplicant_email: 'malini.bandara@email.com',
+        coapplicant_address: 'Ihala Puliyankulama, Kekirawa, Anuradhapura District, North Central Province, Sri Lanka',
+        coapplicant_pan: '927654321V',
+        coapplicant_aadhaar: 'AGR-NCP-24119',
+        requested_amount: '200000',
+      }
+    },
+    {
       id: 'prime_customer',
       title: 'Low Risk Customer',
       description: 'Excellent credit profile with strong history',
       color: 'green',
+      region: 'apac',
       data: {
         applicant_name: 'Arun Kumar',
         applicant_phone: '+91 98765 43218',
@@ -115,6 +207,7 @@ export const LeadRegistration: React.FC<LeadRegistrationProps> = ({
       title: 'Fraud Rejection',
       description: 'High fraud risk, rejected at KYC',
       color: 'red',
+      region: 'apac',
       data: {
         applicant_name: 'Ravi Patel',
         applicant_phone: '+91 98765 43214',
@@ -136,6 +229,7 @@ export const LeadRegistration: React.FC<LeadRegistrationProps> = ({
       title: 'Credit Rejection',
       description: 'Poor cash flow, rejected at credit assessment',
       color: 'red',
+      region: 'apac',
       data: {
         applicant_name: 'Suresh Reddy',
         applicant_phone: '+91 98765 43216',
@@ -154,11 +248,33 @@ export const LeadRegistration: React.FC<LeadRegistrationProps> = ({
     }
   ];
 
+  const demoScenarios = allDemoScenarios.filter(s => !demoRegion || s.region === demoRegion);
+
+  // Auto-fill if scenario was pre-selected on the intro page (Africa mode)
+  const preSelectedScenarioId = (application as any).demo_scenario_id as string | undefined;
+  const autoFillDone = React.useRef(false);
+  useEffect(() => {
+    if (autoFillDone.current) return;
+    if (preSelectedScenarioId && !application.applicant_name) {
+      const scenario = allDemoScenarios.find(s => s.id === preSelectedScenarioId);
+      if (scenario) {
+        autoFillDone.current = true;
+        setFormData({ ...scenario.data, demo_scenario_id: scenario.id } as any);
+        setAutoFilled(true);
+      }
+    }
+  }, [preSelectedScenarioId]);
+
   const handleScenarioSelect = (scenario: typeof demoScenarios[0]) => {
     console.log('Scenario selected:', scenario.id);
-    // Simply update the form data with the scenario instead of reloading
     setFormData({ ...scenario.data, demo_scenario_id: scenario.id } as any);
     (document.getElementById('scenario-modal') as HTMLDialogElement)?.close();
+  };
+
+  const getScenarioCurrency = (scenarioId: string) => {
+    if (scenarioId.startsWith('africa_')) return 'KES ';
+    if (scenarioId === 'sri_lanka_climate_farmer') return 'LKR ';
+    return '₹';
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -191,18 +307,26 @@ export const LeadRegistration: React.FC<LeadRegistrationProps> = ({
         color="blue"
       />
       <div className="mb-6">
+        {autoFilled && (
+          <div className="mb-4 flex items-center gap-3 p-3 bg-green-50 border border-green-200 rounded-lg">
+            <div className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center text-white text-xs font-bold">✓</div>
+            <p className="text-sm text-green-800 font-medium">Use case pre-filled from your selection. Review details and continue.</p>
+          </div>
+        )}
         <div className="flex items-center justify-between">
           <div>
             <h2 className="text-2xl font-bold text-gray-900 mb-1">Lead Registration</h2>
-            <p className="text-sm text-gray-600">Use Prefill Demo to quickly populate realistic scenarios</p>
+            <p className="text-sm text-gray-600">{autoFilled ? 'Details pre-populated from selected use case' : 'Use Prefill Demo to quickly populate realistic scenarios'}</p>
           </div>
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => (document.getElementById('scenario-modal') as HTMLDialogElement)?.showModal()}
-          >
-            Prefill Demo
-          </Button>
+          {!autoFilled && (
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => (document.getElementById('scenario-modal') as HTMLDialogElement)?.showModal()}
+            >
+              Prefill Demo
+            </Button>
+          )}
         </div>
         <dialog id="scenario-modal" className="rounded-lg w-full max-w-xl p-0">
           <div className="p-4 border-b">
@@ -228,7 +352,7 @@ export const LeadRegistration: React.FC<LeadRegistrationProps> = ({
                     <p className="font-medium text-gray-900">{scenario.title}</p>
                     <p className="text-xs text-gray-600">{scenario.description}</p>
                   </div>
-                  <span className="text-xs text-gray-500">₹{scenario.data.requested_amount}</span>
+                  <span className="text-xs text-gray-500">{getScenarioCurrency(scenario.id)}{scenario.data.requested_amount}</span>
                 </div>
               </button>
             ))}
@@ -301,33 +425,33 @@ export const LeadRegistration: React.FC<LeadRegistrationProps> = ({
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  PAN Number
-                  <span className="ml-2 text-xs text-gray-500 font-normal">(Permanent Account Number - Tax ID)</span>
+                  {secondaryIdLabel}
+                  <span className="ml-2 text-xs text-gray-500 font-normal">{secondaryIdHint}</span>
                 </label>
                 <input
                   type="text"
                   name="applicant_pan"
                   value={formData.applicant_pan}
                   onChange={handleChange}
-                  placeholder="e.g., ABCDE1234F"
+                  placeholder={secondaryIdPlaceholder}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#11287c] focus:border-transparent"
                 />
-                <p className="text-xs text-gray-500 mt-1">10-character alphanumeric tax identifier issued by Income Tax Department</p>
+                <p className="text-xs text-gray-500 mt-1">{secondaryIdHelperText}</p>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Aadhaar Number
-                  <span className="ml-2 text-xs text-gray-500 font-normal">(Unique ID - Government issued)</span>
+                  {primaryIdLabel}
+                  <span className="ml-2 text-xs text-gray-500 font-normal">{primaryIdHint}</span>
                 </label>
                 <input
                   type="text"
                   name="applicant_aadhaar"
                   value={formData.applicant_aadhaar}
                   onChange={handleChange}
-                  placeholder="e.g., 1234 5678 9012"
+                  placeholder={primaryIdPlaceholder}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#11287c] focus:border-transparent"
                 />
-                <p className="text-xs text-gray-500 mt-1">12-digit unique identification number issued by UIDAI</p>
+                <p className="text-xs text-gray-500 mt-1">{primaryIdHelperText}</p>
               </div>
             </div>
           </div>
@@ -391,25 +515,27 @@ export const LeadRegistration: React.FC<LeadRegistrationProps> = ({
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  PAN Number
+                  {secondaryIdLabel}
                 </label>
                 <input
                   type="text"
                   name="coapplicant_pan"
                   value={formData.coapplicant_pan}
                   onChange={handleChange}
+                  placeholder={isAfricaScenario ? 'e.g., A098765432C' : isSriLankaScenario ? 'e.g., AGR-NCP-24119' : 'e.g., KLMNO8901Q'}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#11287c] focus:border-transparent"
                 />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Aadhaar Number
+                  {primaryIdLabel}
                 </label>
                 <input
                   type="text"
                   name="coapplicant_aadhaar"
                   value={formData.coapplicant_aadhaar}
                   onChange={handleChange}
+                  placeholder={isAfricaScenario ? 'e.g., 29123456' : isSriLankaScenario ? 'e.g., 927654321V' : 'e.g., 9876 5432 1098'}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#11287c] focus:border-transparent"
                 />
               </div>
@@ -421,7 +547,7 @@ export const LeadRegistration: React.FC<LeadRegistrationProps> = ({
           <h3 className="text-lg font-semibold text-gray-900 mb-4">Loan Details</h3>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Requested Loan Amount (₹) *
+              Requested Loan Amount ({currencyLabel}) *
             </label>
             <input
               type="number"
@@ -476,7 +602,7 @@ export const LeadRegistration: React.FC<LeadRegistrationProps> = ({
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Monthly Income (₹) *
+                  Monthly Income ({currencyLabel}) *
                 </label>
                 <input
                   type="number"
@@ -490,7 +616,7 @@ export const LeadRegistration: React.FC<LeadRegistrationProps> = ({
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Existing Loans (₹) *
+                  Existing Loans ({currencyLabel}) *
                 </label>
                 <input
                   type="number"
