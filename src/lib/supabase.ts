@@ -191,6 +191,27 @@ export type LoanApplication = {
   disbursement_reference?: string;
   rejection_reason?: string;
   reviewer_comments?: string;
+  // --- Street vendor daily-EDI scenario ---
+  vendor_profile?: {
+    sells: string;
+    shop_type: string;
+    market: string;
+    city: string;
+    years_in_business: number;
+    daily_sales: number;
+    weekly_no_due_day: string;
+  };
+  estimated_daily_income?: number;
+  daily_instalment?: number;
+  paying_days?: number;
+  total_repayable?: number;
+  mandate_primary_rail?: string;
+  mandate_primary_reference?: string;
+  mandate_primary_status?: string;
+  mandate_fallback_rail?: string;
+  mandate_fallback_reference?: string;
+  mandate_fallback_status?: string;
+  mandate_max_debit?: number;
   available_bank_accounts?: Array<{
     id: string;
     bank_name: string;

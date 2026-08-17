@@ -10,10 +10,13 @@ module.exports = {
         "black-disabled": "var(--black-disabled)",
         "brand-orange": "var(--brand-orange)",
         "cta-blue": "var(--cta-blue)",
-        green: "var(--green)",
+        // Named brand tokens. These must not be called `green`/`red`: doing so
+        // replaces Tailwind's whole green/red scale, which silently voids every
+        // bg-green-100 / text-red-800 utility used across the screens.
+        "brand-green": "var(--green)",
         "green-1": "var(--green-1)",
         "midnight-black": "var(--midnight-black)",
-        red: "var(--red)",
+        "brand-red": "var(--red)",
         "text-dark": "var(--text-dark)",
         "text-light": "var(--text-light)",
         "text-medium": "var(--text-medium)",

@@ -8,6 +8,8 @@ interface StepNarrationProps {
   icon: string;
   color?: string;
   autoShow?: boolean;
+  /** Journey length for the "Step x of y" label — flows vary by scenario. */
+  totalSteps?: number;
 }
 
 export const StepNarration: React.FC<StepNarrationProps> = ({
@@ -16,7 +18,8 @@ export const StepNarration: React.FC<StepNarrationProps> = ({
   description,
   icon,
   color = "blue",
-  autoShow = true
+  autoShow = true,
+  totalSteps = 5
 }) => {
   const [show, setShow] = useState(false);
   const [hasShown, setHasShown] = useState(false);
@@ -91,7 +94,7 @@ export const StepNarration: React.FC<StepNarrationProps> = ({
                 {icon}
               </div>
               <div>
-                <div className="text-sm font-medium opacity-90 mb-1">Step {step} of 5</div>
+                <div className="text-sm font-medium opacity-90 mb-1">Step {step} of {totalSteps}</div>
                 <h2 className="text-2xl font-bold">{title}</h2>
               </div>
             </div>

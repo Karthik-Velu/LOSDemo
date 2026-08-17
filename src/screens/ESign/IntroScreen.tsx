@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { Button } from "../../components/ui/button";
+import { VENDOR_SCENARIO_ID } from "../../lib/vendorDemo";
 
 interface IntroScreenProps {
   region: string;
@@ -7,6 +8,14 @@ interface IntroScreenProps {
 }
 
 const apacScenarios = [
+  {
+    id: VENDOR_SCENARIO_ID,
+    name: "Street Vendor (Daily EDI)",
+    color: "teal",
+    icon: "🛒",
+    description: "India: vegetable vendor in Chennai. Small-ticket loan repaid in daily instalments on a UPI Autopay mandate, with NACH as the fallback rail — and a live collections dashboard after disbursal.",
+    outcome: "Auto-Approved • ₹30,000 • 120 days • daily instalment on mandate"
+  },
   {
     name: "Sri Lanka Farmer",
     color: "amber",
@@ -84,6 +93,7 @@ export const IntroScreen: React.FC<IntroScreenProps> = ({ region, onNext }) => {
       green: "border-green-300 bg-gradient-to-br from-green-50 to-emerald-50 hover:shadow-green-200",
       blue: "border-blue-300 bg-gradient-to-br from-blue-50 to-indigo-50 hover:shadow-blue-200",
       yellow: "border-yellow-300 bg-gradient-to-br from-yellow-50 to-amber-50 hover:shadow-yellow-200",
+      teal: "border-teal-300 bg-gradient-to-br from-teal-50 to-cyan-50 hover:shadow-teal-200",
       orange: "border-orange-300 bg-gradient-to-br from-orange-50 to-yellow-50 hover:shadow-orange-200",
       amber: "border-amber-300 bg-gradient-to-br from-amber-50 to-orange-50 hover:shadow-amber-200",
       red: "border-red-300 bg-gradient-to-br from-red-50 to-pink-50 hover:shadow-red-200"
@@ -95,11 +105,25 @@ export const IntroScreen: React.FC<IntroScreenProps> = ({ region, onNext }) => {
     ? 'AI-powered credit decisioning for smallholder farmers using climate, soil, crop, and socioeconomic data.'
     : '';
 
-  const flowSteps = isAfrica
+  const isVendorSelected = selectedScenarioId === VENDOR_SCENARIO_ID;
+
+  const flowSteps = isVendorSelected
+    ? ["Application", "Business Profile", "Consent & Income", "Credit Assessment", "Mandate Setup", "Disbursement", "Collections"]
+    : isAfrica
     ? ["Application", "Farm Profile", "Credit Assessment", "Disbursement"]
     : ["Application", "Consent", "KYC & Fraud", "Credit Assessment", "Disbursement"];
 
-  const flowDescriptions = isAfrica
+  const flowDescriptions = isVendorSelected
+    ? [
+        { title: "Loan Application Entry", description: "Vendor details and requested amount are captured. Identity is verified digitally — no KYC identifiers are typed into the system.", icon: "📝", color: "blue" },
+        { title: "Business Profile", description: "What the vendor sells, where they trade from, years in business, and typical daily sales — which doubles as the qualifying revenue band and caps the daily instalment.", icon: "🛒", color: "green" },
+        { title: "Consent & Income Read", description: "Plain-language consent, then the linked account is read to estimate daily income from settlement patterns.", icon: "🔐", color: "purple" },
+        { title: "Credit Assessment", description: "ki score sizes the loan against daily income and returns the daily instalment. The score is specific to the loan applied for — moving the amount can change the decision.", icon: "📊", color: "indigo" },
+        { title: "Mandate Setup", description: "UPI Autopay mandate as the primary collection rail, NACH registered alongside it as the arrears-sweep fallback. Both as-presented, so no-due days are simply not presented.", icon: "🔁", color: "purple" },
+        { title: "Loan Disbursement", description: "Agreement captured and funds transferred, with the first instalment scheduled for the next collection day.", icon: "💰", color: "emerald" },
+        { title: "Collections & Mandate Tracking", description: "The post-disbursement view: today's mandate run, retries and sweeps, the daily ledger, the repayment calendar, and programme-level collection efficiency.", icon: "📈", color: "indigo" },
+      ]
+    : isAfrica
     ? [
         { title: "Loan Application Entry", description: "Loan officer captures the farmer profile, demographics, geography, and loan request for the Kenya borrower.", icon: "📝", color: "blue" },
         { title: "Farm & Crop Profile", description: "Farm-level inputs — crop type, acreage, irrigation, GPS coordinates — are captured. Climate, soil, and socioeconomic data are automatically extracted at the farm location.", icon: "🌱", color: "green" },
@@ -157,7 +181,7 @@ export const IntroScreen: React.FC<IntroScreenProps> = ({ region, onNext }) => {
               <p className="text-sm text-gray-500 mt-1">
                 {isAfrica
                   ? 'Select a use case below, then click Start Demo Experience.'
-                  : 'Sri Lanka Farmer is the primary flow for today\'s presentation.'}
+                  : 'Select Street Vendor (Daily EDI) for the daily-repayment and collections flow, or continue for the Sri Lanka Farmer journey.'}
               </p>
             </div>
             <button
@@ -167,14 +191,14 @@ export const IntroScreen: React.FC<IntroScreenProps> = ({ region, onNext }) => {
               View All Details →
             </button>
           </div>
-          <div className={`grid gap-4 ${isAfrica ? 'grid-cols-1 md:grid-cols-2' : 'grid-cols-2 md:grid-cols-3 lg:grid-cols-6'}`}>
+          <div className={`grid gap-4 ${isAfrica ? 'grid-cols-1 md:grid-cols-2' : 'grid-cols-2 md:grid-cols-4 lg:grid-cols-7'}`}>
             {scenarios.map((scenario, idx) => {
               const sid = (scenario as any).id as string | undefined;
-              const isSelected = isAfrica && sid && selectedScenarioId === sid;
+              const isSelected = !!sid && selectedScenarioId === sid;
               return (
                 <div
                   key={idx}
-                  onClick={() => isAfrica && sid && setSelectedScenarioId(sid)}
+                  onClick={() => sid && setSelectedScenarioId(sid)}
                   className={`border-2 rounded-xl p-4 text-center transition-all cursor-pointer ${
                     isSelected
                       ? 'border-[#11287c] bg-blue-50 shadow-lg ring-2 ring-[#11287c] ring-offset-2'
@@ -184,7 +208,7 @@ export const IntroScreen: React.FC<IntroScreenProps> = ({ region, onNext }) => {
                   <div className="text-3xl mb-2">{scenario.icon}</div>
                   <p className="text-xs font-semibold text-gray-900">{scenario.name}</p>
                   {isSelected && <p className="text-xs text-[#11287c] font-bold mt-1">Selected</p>}
-                  {isAfrica && !isSelected && (
+                  {sid && !isSelected && (
                     <p className="text-xs text-gray-400 mt-1">Click to select</p>
                   )}
                 </div>
@@ -223,7 +247,7 @@ export const IntroScreen: React.FC<IntroScreenProps> = ({ region, onNext }) => {
 
         <div className="text-center">
           <Button
-            onClick={() => onNext(isAfrica ? selectedScenarioId : undefined)}
+            onClick={() => onNext(selectedScenarioId)}
             disabled={isAfrica && !selectedScenarioId}
             className="bg-gradient-to-r from-[#11287c] to-[#1e3a8a] hover:from-[#1e3a8a] hover:to-[#11287c] text-white px-10 py-4 text-lg font-semibold rounded-xl shadow-lg transition-all transform hover:scale-105 hover:shadow-blue-500/50 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
           >
@@ -309,7 +333,9 @@ export const IntroScreen: React.FC<IntroScreenProps> = ({ region, onNext }) => {
                   Why This Matters
                 </h4>
                 <p className="text-sm text-gray-700 leading-relaxed">
-                  {isAfrica
+                  {isVendorSelected
+                    ? 'A daily-repayment loan only works if collection works. Daily instalments are matched to daily earnings, no-due days absorb the predictable slow days, and the whole thing is collected on standing mandates rather than by a field agent — so the cost of collecting 100 instalments stays close to the cost of collecting one. The collections dashboard is where a lender would actually live: what was presented, what failed, what was recovered, and what needs a human today.'
+                    : isAfrica
                     ? 'Ki Score can generate a robust risk assessment using publicly available alternate data alone — no bureau record, no M-Pesa history, no bank statement required. Bureau and transaction data enhance the score further, but they are not prerequisites. This makes thin-file and no-file farmers visible to the financial system for the first time.'
                     : 'Automation of fraud assessment and credit assessment ensures borrower needs are met within minutes compared to weeks before. Additionally, recommendation of best terms ensures genuine borrowers are not subjected to high interest loans or unreasonable payback structures, preventing hardship for borrowers and NPAs for the financial institution.'}
                 </p>

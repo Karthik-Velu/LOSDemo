@@ -2,12 +2,15 @@ import React, { useState } from "react";
 import { type LoanApplication } from "../../lib/supabase";
 import { Button } from "../../components/ui/button";
 import { StepNarration } from "../../components/StepNarration";
+import { VENDOR_SCENARIO_ID } from "../../lib/vendorDemo";
 
 interface DisbursementProps {
   application: LoanApplication;
   onUpdate: (updates: Partial<LoanApplication>) => Promise<any>;
   onBack: () => void;
   onRestart: () => void;
+  /** Present only when the flow continues past disbursal (vendor daily-EDI collections). */
+  onNext?: () => void;
 }
 
 export const Disbursement: React.FC<DisbursementProps> = ({
@@ -15,12 +18,16 @@ export const Disbursement: React.FC<DisbursementProps> = ({
   onUpdate,
   onBack,
   onRestart,
+  onNext,
 }) => {
   const [selectedAccountId, setSelectedAccountId] = useState<string>('');
   const [processing, setProcessing] = useState(false);
   const scenario = (application as any).demo_scenario_id as string | undefined;
   const isSriLankaScenario = scenario === 'sri_lanka_climate_farmer';
   const isAfricaScenario = scenario?.startsWith('africa_');
+  const isVendorScenario = scenario === VENDOR_SCENARIO_ID;
+  const dailyInstalment = (application as any).daily_instalment as number | undefined;
+  const payingDays = (application as any).paying_days as number | undefined;
   const currencyLocale = isAfricaScenario ? 'en-KE' : isSriLankaScenario ? 'en-LK' : 'en-IN';
   const currencySymbol = isAfricaScenario ? 'KES ' : isSriLankaScenario ? 'LKR ' : '₹';
   const bankCodeLabel = isAfricaScenario ? 'Bank Code' : isSriLankaScenario ? 'Bank Code' : 'IFSC Code';
@@ -44,7 +51,7 @@ export const Disbursement: React.FC<DisbursementProps> = ({
   const handleAccountSelection = async (accountId: string) => {
     setSelectedAccountId(accountId);
 
-    if (isSriLankaScenario || isAfricaScenario) {
+    if (isSriLankaScenario || isAfricaScenario || isVendorScenario) {
       const account = availableAccounts.find(acc => acc.id === accountId);
       if (account) {
         setProcessing(true);
@@ -113,7 +120,8 @@ export const Disbursement: React.FC<DisbursementProps> = ({
   return (
     <div>
       <StepNarration
-        step={5}
+        step={isVendorScenario ? 6 : 5}
+        totalSteps={isVendorScenario ? 7 : 5}
         title="Loan Disbursement"
         description={
           isAfricaScenario
@@ -141,14 +149,37 @@ export const Disbursement: React.FC<DisbursementProps> = ({
               </p>
             </div>
             <div className="bg-white/10 backdrop-blur-sm p-4 rounded-lg">
-              <p className="text-sm text-white/70 mb-1">Term</p>
-              <p className="text-3xl font-bold">{application.recommended_term} months</p>
+              <p className="text-sm text-white/70 mb-1">{isVendorScenario ? 'Tenor' : 'Term'}</p>
+              <p className="text-3xl font-bold">
+                {isVendorScenario ? `${application.recommended_term} days` : `${application.recommended_term} months`}
+              </p>
             </div>
             <div className="bg-white/10 backdrop-blur-sm p-4 rounded-lg">
-              <p className="text-sm text-white/70 mb-1">APR</p>
-              <p className="text-3xl font-bold">{application.recommended_apr}%</p>
+              <p className="text-sm text-white/70 mb-1">{isVendorScenario ? 'Daily instalment' : 'APR'}</p>
+              <p className="text-3xl font-bold">
+                {isVendorScenario ? formatCurrency(dailyInstalment) : `${application.recommended_apr}%`}
+              </p>
+              {isVendorScenario && (
+                <p className="text-xs text-white/70 mt-1">{payingDays} paying days · {application.recommended_apr}% APR</p>
+              )}
             </div>
           </div>
+          {isVendorScenario && (
+            <div className="mt-6 grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm">
+              <div className="bg-white/10 rounded-lg p-3">
+                <p className="text-white/70 text-xs">Collection rail</p>
+                <p className="font-semibold">{(application as any).mandate_primary_rail || 'UPI Autopay'} · active</p>
+              </div>
+              <div className="bg-white/10 rounded-lg p-3">
+                <p className="text-white/70 text-xs">Fallback rail</p>
+                <p className="font-semibold">{(application as any).mandate_fallback_rail || 'NACH'} · arrears sweep</p>
+              </div>
+              <div className="bg-white/10 rounded-lg p-3">
+                <p className="text-white/70 text-xs">First instalment</p>
+                <p className="font-semibold">Tomorrow, 21:30 window</p>
+              </div>
+            </div>
+          )}
           <div className="mt-6 pt-6 border-t border-white/20">
             <div className="flex justify-between items-center">
               <span className="text-white/80">Applicant</span>
@@ -298,8 +329,24 @@ export const Disbursement: React.FC<DisbursementProps> = ({
                   By signing this agreement, the borrower agrees to:
                 </p>
                 <ul className="text-xs text-gray-600 space-y-1 list-disc list-inside">
-                  <li>Repay the loan amount of {formatCurrency(application.recommended_amount)} over {application.recommended_term} months</li>
-                  <li>Pay interest at {application.recommended_apr}% APR</li>
+                  {isVendorScenario ? (
+                    <>
+                      <li>
+                        Repay {formatCurrency(application.recommended_amount)} in daily instalments of {formatCurrency(dailyInstalment)} over
+                        {' '}{application.recommended_term} days ({payingDays} collection days)
+                      </li>
+                      <li>Pay interest at {application.recommended_apr}% APR, reducing balance</li>
+                      <li>
+                        Authorise collection of each instalment on the registered mandate, with no instalment due on the declared weekly
+                        no-due day or on public holidays
+                      </li>
+                    </>
+                  ) : (
+                    <>
+                      <li>Repay the loan amount of {formatCurrency(application.recommended_amount)} over {application.recommended_term} months</li>
+                      <li>Pay interest at {application.recommended_apr}% APR</li>
+                    </>
+                  )}
                   <li>Comply with all terms and conditions</li>
                   <li>Provide accurate information</li>
                 </ul>
@@ -337,7 +384,25 @@ export const Disbursement: React.FC<DisbursementProps> = ({
                   Disbursed on {new Date(application.disbursed_at!).toLocaleString(currencyLocale)}
                 </p>
               </div>
-              <div className="mt-8">
+              {isVendorScenario && (
+                <div className="bg-white p-5 rounded-xl border border-green-200 shadow-sm max-w-xl mx-auto mb-6 text-left">
+                  <p className="text-sm font-semibold text-gray-900 mb-2">What happens from tomorrow</p>
+                  <ul className="text-sm text-gray-700 space-y-1">
+                    <li>• {formatCurrency(dailyInstalment)} collected on every collection day via {(application as any).mandate_primary_rail || 'UPI Autopay'}</li>
+                    <li>• Weekly no-due day and public holidays are skipped automatically</li>
+                    <li>• Repay daily and the next-cycle limit grows — no separate application</li>
+                  </ul>
+                </div>
+              )}
+              <div className="mt-8 flex flex-wrap gap-3 justify-center">
+                {onNext && (
+                  <Button
+                    onClick={onNext}
+                    className="bg-[#28B2B6] hover:bg-[#1f9296] text-white px-10 py-4 text-lg font-semibold shadow-lg"
+                  >
+                    Open Collections Dashboard →
+                  </Button>
+                )}
                 <Button
                   onClick={onRestart}
                   className="bg-[#11287c] hover:bg-[#1e3a8a] text-white px-10 py-4 text-lg font-semibold shadow-lg"

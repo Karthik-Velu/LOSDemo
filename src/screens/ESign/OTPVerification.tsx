@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { type LoanApplication } from "../../lib/supabase";
 import { Button } from "../../components/ui/button";
 import { StepNarration } from "../../components/StepNarration";
+import { VENDOR_SCENARIO_ID, vendorPersona, formatINR } from "../../lib/vendorDemo";
 
 interface OTPVerificationProps {
   application: LoanApplication;
@@ -33,9 +34,13 @@ export const OTPVerification: React.FC<OTPVerificationProps> = ({
   const [consentConfirmed, setConsentConfirmed] = useState(false);
   const consentStarted = React.useRef(false);
 
+  const isVendorScenario = scenario === VENDOR_SCENARIO_ID;
+  const [vendorPhase, setVendorPhase] = useState<'consent' | 'otp' | 'linking' | 'reading' | 'done'>('consent');
+  const [vendorReadStep, setVendorReadStep] = useState(0);
+
   // Auto-verify OTP for non-Africa-alt-only scenarios
   useEffect(() => {
-    if (isAfricaAltOnly) return;
+    if (isAfricaAltOnly || isVendorScenario) return;
     if (!application.bureau_otp_verified && !application.bank_otp_verified) {
       const timer = setTimeout(() => {
         setOtp('123456');
@@ -101,6 +106,152 @@ export const OTPVerification: React.FC<OTPVerificationProps> = ({
       setTimeout(() => { onNext(); }, 1500);
     }
   };
+
+  // --- STREET VENDOR (DAILY EDI): consent → OTP → account link → income read ---
+  if (isVendorScenario) {
+    const runIncomeRead = async () => {
+      setVendorPhase('linking');
+      await new Promise(r => setTimeout(r, 1200));
+      setVendorPhase('reading');
+      for (let i = 0; i < 4; i++) {
+        setVendorReadStep(i);
+        await new Promise(r => setTimeout(r, 650));
+      }
+      await onUpdate({
+        bureau_otp_verified: true,
+        bureau_otp_verified_at: new Date().toISOString(),
+        bank_otp_verified: true,
+        bank_otp_verified_at: new Date().toISOString(),
+        estimated_daily_income: vendorPersona.estimatedDailyIncome,
+      } as any);
+      setVendorPhase('done');
+    };
+
+    const readSteps = [
+      'Reading 6 months of account activity',
+      'Separating trade receipts from personal transfers',
+      'Modelling daily and weekly sales patterns',
+      'Estimating sustainable daily repayment capacity',
+    ];
+
+    return (
+      <div>
+        <StepNarration
+          step={3}
+          title="Consent & Income Read"
+          description="Consent is a screen of its own, in plain language: what is read, why, and for how long. Once given, the linked account is read to estimate what the vendor actually earns in a day — the figure the daily instalment is sized against."
+          icon="🔐"
+          color="purple"
+          totalSteps={7}
+        />
+
+        <div className="mb-6">
+          <h2 className="text-2xl font-bold text-gray-900">Consent & Income Read</h2>
+          <p className="text-sm text-gray-600 mt-1">Borrower consent, then income estimation from the linked account</p>
+        </div>
+
+        {vendorPhase === 'consent' && (
+          <div className="bg-white p-6 rounded-lg shadow-sm max-w-2xl">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Your consent</h3>
+            <div className="space-y-3 mb-6">
+              {[
+                { icon: '📥', title: 'What we will read', body: 'Money coming in and going out of the account you link, for the last 6 months.' },
+                { icon: '🎯', title: 'Why we need it', body: 'To work out what you earn on a normal day, and to set a daily instalment you can actually pay.' },
+                { icon: '⏳', title: 'How long we keep it', body: 'For as long as this loan is running, and as required by law after it closes.' },
+                { icon: '🛑', title: 'You stay in control', body: 'You can withdraw this consent at any time from the app or by calling us.' },
+              ].map(item => (
+                <div key={item.title} className="flex gap-3 p-3 bg-gray-50 rounded-lg border border-gray-200">
+                  <span className="text-xl">{item.icon}</span>
+                  <div>
+                    <p className="text-sm font-semibold text-gray-900">{item.title}</p>
+                    <p className="text-sm text-gray-700">{item.body}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="flex flex-wrap gap-3">
+              <Button
+                onClick={() => setVendorPhase('otp')}
+                className="bg-[#11287c] hover:bg-[#1e3a8a] text-white px-8 py-2"
+              >
+                I agree — send OTP
+              </Button>
+              <Button variant="outline" onClick={onBack} className="px-6">Back</Button>
+            </div>
+          </div>
+        )}
+
+        {vendorPhase === 'otp' && (
+          <div className="bg-white p-6 rounded-lg shadow-sm max-w-2xl">
+            <h3 className="text-lg font-semibold text-gray-900 mb-1">Verify with OTP</h3>
+            <p className="text-sm text-gray-600 mb-4">Sent to {vendorPersona.phone} (demo OTP pre-filled)</p>
+            <input
+              type="text"
+              value={otp || '000000'}
+              readOnly
+              className="w-48 px-4 py-3 text-2xl tracking-[0.4em] text-center border-2 border-gray-300 rounded-lg bg-gray-50 mb-4"
+            />
+            <div className="flex flex-wrap gap-3">
+              <Button onClick={runIncomeRead} className="bg-[#11287c] hover:bg-[#1e3a8a] text-white px-8 py-2">
+                Verify & Link Account
+              </Button>
+              <Button variant="outline" onClick={() => setVendorPhase('consent')} className="px-6">Back</Button>
+            </div>
+          </div>
+        )}
+
+        {(vendorPhase === 'linking' || vendorPhase === 'reading') && (
+          <div className="bg-white p-10 rounded-lg shadow-sm text-center">
+            <div className="max-w-md mx-auto">
+              <div className="animate-spin rounded-full h-14 w-14 border-b-2 border-[#11287c] mx-auto mb-6"></div>
+              <h3 className="text-xl font-semibold text-gray-900 mb-4">
+                {vendorPhase === 'linking' ? 'Linking account...' : 'Reading your income...'}
+              </h3>
+              {vendorPhase === 'reading' && (
+                <div className="space-y-2 text-left">
+                  {readSteps.map((step, i) => (
+                    <div key={i} className={`flex items-center gap-3 p-2 rounded ${i <= vendorReadStep ? 'bg-teal-50' : 'opacity-40'}`}>
+                      <div className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] text-white ${i < vendorReadStep ? 'bg-green-500' : i === vendorReadStep ? 'bg-[#28B2B6]' : 'bg-gray-300'}`}>
+                        {i < vendorReadStep ? '✓' : i + 1}
+                      </div>
+                      <span className="text-sm text-gray-700">{step}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {vendorPhase === 'done' && (
+          <div className="space-y-6">
+            <div className="bg-gradient-to-br from-teal-50 to-blue-50 border-2 border-[#28B2B6] p-8 rounded-xl">
+              <p className="text-sm text-gray-600 mb-1">Estimated daily income</p>
+              <p className="text-5xl font-bold text-[#11287c] mb-2">{formatINR(vendorPersona.estimatedDailyIncome)}</p>
+              <p className="text-sm text-gray-700">
+                From typical daily sales of {formatINR(vendorPersona.dailySales)}, after trade costs.
+              </p>
+              <p className="text-xs text-gray-600 mt-3">Confidence: {vendorPersona.incomeConfidence}</p>
+            </div>
+            <div className="bg-white p-6 rounded-lg shadow-sm">
+              <h3 className="text-lg font-semibold text-gray-900 mb-3">What this feeds</h3>
+              <ul className="text-sm text-gray-700 space-y-1">
+                <li>• The daily instalment is capped at a fixed share of daily sales, so it never outruns a normal trading day.</li>
+                <li>• Weekly patterns in the account set the weekly no-due day and flag the slow days.</li>
+                <li>• Income estimation runs alongside locality context in ki score — neither is used on its own.</li>
+              </ul>
+            </div>
+            <div className="flex justify-between">
+              <Button variant="outline" onClick={onBack} className="px-6">Back</Button>
+              <Button onClick={onNext} className="bg-[#11287c] hover:bg-[#1e3a8a] text-white px-8 py-2">
+                Continue to Credit Assessment
+              </Button>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
 
   // --- AFRICA ALT-DATA-ONLY: simple consent confirmation ---
   if (isAfricaAltOnly) {

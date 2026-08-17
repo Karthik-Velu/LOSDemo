@@ -102,6 +102,16 @@ import kiLogo from "../../assets/ki-logo.svg";
 import { type LoanApplication } from "../../lib/supabase";
 import { Button } from "../../components/ui/button";
 import { StepNarration } from "../../components/StepNarration";
+import {
+  VENDOR_SCENARIO_ID,
+  computeOffer,
+  countPayingDays,
+  formatINR,
+  getDisbursalDate,
+  maxAmountWithinCapacity,
+  vendorLoanConfig,
+  vendorPersona,
+} from "../../lib/vendorDemo";
 
 interface CreditCheckProps {
   application: LoanApplication;
@@ -127,12 +137,14 @@ export const CreditCheck: React.FC<CreditCheckProps> = ({
   const isAfricaScenario = scenario === 'africa_agri_alt_only' || scenario === 'africa_agri_enhanced';
   const isAfricaAltOnly = scenario === 'africa_agri_alt_only';
   const isAfricaEnhanced = scenario === 'africa_agri_enhanced';
+  const isVendorScenario = scenario === VENDOR_SCENARIO_ID;
   const currencyLocale = isAfricaScenario ? 'en-KE' : isSriLankaFarmerScenario ? 'en-LK' : 'en-IN';
   const currencySymbol = isAfricaScenario ? 'KES ' : isSriLankaFarmerScenario ? 'LKR ' : '₹';
   const minimumLoanAmount = isAfricaScenario ? 10000 : isSriLankaFarmerScenario ? 50000 : 5000;
   const formatCurrency = (value?: number) => `${currencySymbol}${(value || 0).toLocaleString(currencyLocale)}`;
   
   // Interactive slider state
+  const [vendorAmount, setVendorAmount] = useState<number>(0);
   const [selectedLoanAmount, setSelectedLoanAmount] = useState<number>(application.eligible_amount || 0);
   const [dynamicAPR, setDynamicAPR] = useState<number>(application.recommended_apr || 18);
   const [dynamicTerm, setDynamicTerm] = useState<number>(application.recommended_term || 12);
@@ -223,6 +235,59 @@ export const CreditCheck: React.FC<CreditCheckProps> = ({
   const runCreditCheck = async () => {
     setProcessing(true);
     await new Promise(resolve => setTimeout(resolve, 2500));
+
+    // Street vendor daily-EDI loan: sized on daily income, priced on paying days.
+    if (isVendorScenario) {
+      const disbursalDate = getDisbursalDate();
+      const payingDays = countPayingDays(disbursalDate);
+      const dailySales = ((application as any).vendor_profile?.daily_sales) || vendorPersona.dailySales;
+      const requested = application.requested_amount || vendorLoanConfig.requestedAmount;
+      const capAmount = maxAmountWithinCapacity(payingDays, dailySales);
+      const approvedAmount = Math.min(requested, capAmount);
+      const offer = computeOffer(approvedAmount, payingDays, vendorLoanConfig.tenorDays, dailySales);
+
+      await onUpdate({
+        ki_score: 34,
+        eligible_amount: capAmount,
+        recommended_amount: approvedAmount,
+        recommended_term: vendorLoanConfig.tenorDays,
+        recommended_apr: offer.apr,
+        credit_decision: 'approved',
+        credit_checked_at: new Date().toISOString(),
+        daily_instalment: offer.dailyInstalment,
+        paying_days: payingDays,
+        total_repayable: offer.totalRepayable,
+        available_bank_accounts: [
+          {
+            id: 'acc_1',
+            bank_name: 'Demo Bank — vendor current account',
+            account_number: 'XXXXXXXX4417',
+            ifsc_code: 'DEMO0000417',
+            account_type: 'Current',
+            balance: 3800,
+          },
+        ],
+        decision_reasons: {
+          whats_good: [
+            `Steady daily sales — ${formatINR(dailySales)} on a typical day, across ${vendorPersona.yearsInBusiness} years at the same pitch`,
+            'Stable vending location with consistent trade receipts through the week',
+            'Enterprise activity in the surrounding market supports demand through the loan term',
+            `Instalment sized at ${offer.instalmentPctOfSales.toFixed(1)}% of daily sales — well inside the ${vendorLoanConfig.instalmentCapPctOfSales}% cap`,
+          ],
+          needs_improvement: [
+            'Sales dip on the weekly slow day — absorbed by the declared no-due day rather than by an arrear',
+            'Cash-heavy trade means part of the income is inferred rather than observed directly in the account',
+          ],
+          whats_bad: [
+            'No formal credit history to fall back on — the decision rests on income estimation and locality context',
+          ],
+        },
+      } as any);
+
+      setHasRunCreditCheck(true);
+      setProcessing(false);
+      return;
+    }
 
     // Deterministic outcomes based on selected demo scenario
     // Ki Score: Lower is better (like golf score)
@@ -915,7 +980,9 @@ export const CreditCheck: React.FC<CreditCheckProps> = ({
           </div>
           <h3 className="text-xl font-semibold text-gray-900 mb-2">Running Credit Assessment...</h3>
           <p className="text-gray-600">
-            Pulling credit bureau data, analyzing bank statements, and evaluating alternate data.
+            {isVendorScenario
+              ? 'Sizing the loan against estimated daily income, locality context, and the daily repayment construct.'
+              : 'Pulling credit bureau data, analyzing bank statements, and evaluating alternate data.'}
           </p>
         </div>
 
@@ -928,6 +995,250 @@ export const CreditCheck: React.FC<CreditCheckProps> = ({
 
   const kiScore = application.ki_score || 0;
   const decision = application.decision_reasons as any;
+
+  // --- STREET VENDOR (DAILY EDI): purpose-built decision screen ---
+  if (isVendorScenario && application.credit_checked_at) {
+    const payingDays = (application as any).paying_days || countPayingDays(getDisbursalDate());
+    const dailySales = ((application as any).vendor_profile?.daily_sales) || vendorPersona.dailySales;
+    const approvedAmount = application.recommended_amount || vendorLoanConfig.requestedAmount;
+    const capAmount = application.eligible_amount || approvedAmount;
+    const sliderAmount = vendorAmount || approvedAmount;
+    const liveOffer = computeOffer(sliderAmount, payingDays, vendorLoanConfig.tenorDays, dailySales);
+    const withinCapacity = sliderAmount <= capAmount;
+
+    return (
+      <div>
+        <StepNarration
+          step={4}
+          title="Credit Assessment"
+          description="ki score reads income estimation and locality context together and returns a decision for this specific loan — the amount and the daily instalment, not just a yes on the person. Move the amount and the decision moves with it: past the point where the daily instalment outruns a normal trading day, the same borrower is referred rather than approved."
+          icon="📊"
+          color="indigo"
+          totalSteps={7}
+        />
+
+        <div className="flex flex-wrap items-center justify-between gap-3 mb-8">
+          <div>
+            <h2 className="text-3xl font-bold text-gray-900 mb-1">Credit Assessment</h2>
+            <p className="text-base text-gray-600">Loan ID: {application.loan_id} · {application.applicant_name}</p>
+          </div>
+          <div className={`px-6 py-3 rounded-xl font-bold text-lg shadow-md border-2 ${
+            withinCapacity ? 'bg-green-100 text-green-800 border-green-300' : 'bg-yellow-100 text-yellow-800 border-yellow-300'
+          }`}>
+            {withinCapacity ? '✓ APPROVED' : '⚠ REFER TO CREDIT OPS'}
+          </div>
+        </div>
+
+        <div className="space-y-6">
+          <div className="bg-white p-6 rounded-lg shadow-sm">
+            <div className="flex items-center gap-2 mb-4">
+              <img src={kiLogo} alt="ki score" className="h-5 w-auto" />
+              <h3 className="text-lg font-semibold text-gray-900">ki score Summary</h3>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div className="text-center p-4 bg-gray-50 rounded-lg">
+                <div className="text-5xl font-bold" style={{ color: getScoreColor(kiScore) }}>{kiScore}</div>
+                <p className="text-sm font-semibold mt-1" style={{ color: getScoreColor(kiScore) }}>{getScoreLabel(kiScore)}</p>
+                <p className="text-xs text-gray-500 mt-1">1–100, lower is better</p>
+              </div>
+              <div className="p-4 bg-gray-50 rounded-lg">
+                <p className="text-xs text-gray-500">Approved amount</p>
+                <p className="text-2xl font-bold text-[#11287c]">{formatINR(approvedAmount)}</p>
+                <p className="text-xs text-gray-500 mt-1">Requested {formatINR(application.requested_amount || 0)}</p>
+              </div>
+              <div className="p-4 bg-gray-50 rounded-lg">
+                <p className="text-xs text-gray-500">Daily instalment</p>
+                <p className="text-2xl font-bold text-[#28B2B6]">{formatINR((application as any).daily_instalment || 0)}</p>
+                <p className="text-xs text-gray-500 mt-1">{payingDays} paying days</p>
+              </div>
+              <div className="p-4 bg-gray-50 rounded-lg">
+                <p className="text-xs text-gray-500">Tenor</p>
+                <p className="text-2xl font-bold text-[#11287c]">{vendorLoanConfig.tenorDays} days</p>
+                <p className="text-xs text-gray-500 mt-1">{application.recommended_apr}% APR · total {formatINR((application as any).total_repayable || 0)}</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white p-6 rounded-lg shadow-sm">
+            <h3 className="text-lg font-semibold text-gray-900 mb-1">Scored for this loan, not just this borrower</h3>
+            <p className="text-sm text-gray-600 mb-6">
+              Move the amount — the daily instalment moves with it, and so does the decision.
+            </p>
+
+            <div className="flex items-end justify-between mb-2">
+              <span className="text-sm text-gray-600">Loan amount</span>
+              <span className="text-3xl font-bold text-[#11287c]">{formatINR(sliderAmount)}</span>
+            </div>
+            <input
+              type="range"
+              min={vendorLoanConfig.minAmount}
+              max={vendorLoanConfig.maxAmount}
+              step={1000}
+              value={sliderAmount}
+              onChange={e => setVendorAmount(Number(e.target.value))}
+              className="w-full h-3 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-[#11287c]"
+            />
+            <div className="flex justify-between text-xs text-gray-500 mt-1 mb-6">
+              <span>{formatINR(vendorLoanConfig.minAmount)}</span>
+              <span>{formatINR(vendorLoanConfig.maxAmount)}</span>
+            </div>
+
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+              <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
+                <p className="text-xs text-gray-500">Daily instalment</p>
+                <p className="text-xl font-bold text-gray-900">{formatINR(liveOffer.dailyInstalment)}</p>
+              </div>
+              <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
+                <p className="text-xs text-gray-500">Share of daily sales</p>
+                <p className={`text-xl font-bold ${liveOffer.withinCapacity ? 'text-green-700' : 'text-red-600'}`}>
+                  {liveOffer.instalmentPctOfSales.toFixed(1)}%
+                </p>
+              </div>
+              <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
+                <p className="text-xs text-gray-500">APR</p>
+                <p className="text-xl font-bold text-gray-900">{liveOffer.apr}%</p>
+              </div>
+              <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
+                <p className="text-xs text-gray-500">Total repayable</p>
+                <p className="text-xl font-bold text-gray-900">{formatINR(liveOffer.totalRepayable)}</p>
+              </div>
+            </div>
+
+            <div className={`p-4 rounded-lg border-2 ${
+              withinCapacity ? 'bg-green-50 border-green-300 text-green-900' : 'bg-yellow-50 border-yellow-300 text-yellow-900'
+            }`}>
+              {withinCapacity ? (
+                <p className="text-sm">
+                  <strong>Approved at this amount.</strong> The daily instalment stays within {vendorLoanConfig.instalmentCapPctOfSales}% of
+                  typical daily sales of {formatINR(dailySales)}, which is what this borrower's trade can carry on an ordinary day.
+                </p>
+              ) : (
+                <p className="text-sm">
+                  <strong>Referred at this amount.</strong> {formatINR(liveOffer.dailyInstalment)} a day is
+                  {' '}{liveOffer.instalmentPctOfSales.toFixed(1)}% of typical daily sales — past the {vendorLoanConfig.instalmentCapPctOfSales}% cap.
+                  The assessed ceiling for this borrower is {formatINR(capAmount)}; anything above it needs either a longer tenor or a credit-ops override.
+                </p>
+              )}
+            </div>
+            {sliderAmount !== approvedAmount && (
+              <button
+                onClick={() => setVendorAmount(approvedAmount)}
+                className="text-xs text-[#11287c] font-semibold hover:underline mt-3"
+              >
+                Reset to the approved amount ({formatINR(approvedAmount)})
+              </button>
+            )}
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+              <h4 className="text-sm font-semibold text-green-900 mb-2">Why this was approved</h4>
+              <ul className="text-xs space-y-1.5">
+                {decision?.whats_good?.map((item: string, i: number) => (
+                  <li key={i} className="text-green-800">• {item}</li>
+                ))}
+              </ul>
+            </div>
+            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+              <h4 className="text-sm font-semibold text-yellow-900 mb-2">Areas to watch</h4>
+              <ul className="text-xs space-y-1.5">
+                {decision?.needs_improvement?.map((item: string, i: number) => (
+                  <li key={i} className="text-yellow-800">• {item}</li>
+                ))}
+              </ul>
+            </div>
+            <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+              <h4 className="text-sm font-semibold text-red-900 mb-2">Risk factors</h4>
+              <ul className="text-xs space-y-1.5">
+                {decision?.whats_bad?.map((item: string, i: number) => (
+                  <li key={i} className="text-red-800">• {item}</li>
+                ))}
+              </ul>
+            </div>
+          </div>
+
+          <div className="bg-white p-6 rounded-lg shadow-sm">
+            <h3 className="text-lg font-semibold text-gray-900 mb-1">What ki score read</h3>
+            <p className="text-xs text-gray-500 mb-4">Income estimation and locality context, combined — no bureau record required</p>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="border border-gray-200 rounded-lg overflow-hidden">
+                <div className="px-3 py-2 bg-[#11287c] text-white text-xs font-semibold">💰 Income estimation</div>
+                <div className="p-3 space-y-2 text-xs">
+                  <div><p className="font-semibold text-gray-900">Typical daily sales</p><p className="text-gray-700">{formatINR(dailySales)}</p></div>
+                  <div><p className="font-semibold text-gray-900">Estimated daily income</p><p className="text-gray-700">{formatINR((application as any).estimated_daily_income || vendorPersona.estimatedDailyIncome)}</p></div>
+                  <div><p className="font-semibold text-gray-900">Weekly pattern</p><p className="text-gray-700">Consistent Tue–Sun, slowest on the declared no-due day</p></div>
+                  <div><p className="font-semibold text-gray-900">Receipt mix</p><p className="text-gray-700">Digital receipts plus cash trade, read over 6 months</p></div>
+                </div>
+              </div>
+              <div className="border border-gray-200 rounded-lg overflow-hidden">
+                <div className="px-3 py-2 bg-[#28B2B6] text-white text-xs font-semibold">🏪 Enterprise profile</div>
+                <div className="p-3 space-y-2 text-xs">
+                  <div><p className="font-semibold text-gray-900">Trade</p><p className="text-gray-700">{(application as any).vendor_profile?.sells || vendorPersona.sells}</p></div>
+                  <div><p className="font-semibold text-gray-900">Set-up</p><p className="text-gray-700">{(application as any).vendor_profile?.shop_type || vendorPersona.shopType}, same pitch</p></div>
+                  <div><p className="font-semibold text-gray-900">Years trading</p><p className="text-gray-700">{(application as any).vendor_profile?.years_in_business || vendorPersona.yearsInBusiness} years</p></div>
+                  <div><p className="font-semibold text-gray-900">Loan purpose</p><p className="text-gray-700">Working capital — stock purchase</p></div>
+                </div>
+              </div>
+              <div className="border border-gray-200 rounded-lg overflow-hidden">
+                <div className="px-3 py-2 bg-[#1a3a5c] text-white text-xs font-semibold">📍 Locality context</div>
+                <div className="p-3 space-y-2 text-xs">
+                  <div><p className="font-semibold text-gray-900">Market footfall</p><p className="text-gray-700">Established daily market, stable through the year</p></div>
+                  <div><p className="font-semibold text-gray-900">Enterprise activity</p><p className="text-gray-700">High density of small trade in the surrounding area</p></div>
+                  <div><p className="font-semibold text-gray-900">Repayment behaviour nearby</p><p className="text-gray-700">Comparable vendors repay in line with the book average</p></div>
+                  <div><p className="font-semibold text-gray-900">Seasonality</p><p className="text-gray-700">Festival weeks lift sales; monsoon weeks soften them</p></div>
+                </div>
+              </div>
+            </div>
+            <p className="text-[10px] text-gray-400 mt-3 italic">
+              Alternate data and locality context, drawn from hundreds of engineered features, and expanding.
+            </p>
+          </div>
+
+          <div className="bg-white p-6 rounded-lg shadow-sm">
+            <h3 className="text-lg font-semibold text-gray-900 mb-3">Repayment construct</h3>
+            <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 text-sm">
+              <div className="p-3 bg-gray-50 rounded border border-gray-200">
+                <p className="text-xs text-gray-500">Instalment frequency</p>
+                <p className="font-semibold text-gray-900">Every collection day</p>
+              </div>
+              <div className="p-3 bg-gray-50 rounded border border-gray-200">
+                <p className="text-xs text-gray-500">No-due days</p>
+                <p className="font-semibold text-gray-900">Weekly declared day + public holidays</p>
+              </div>
+              <div className="p-3 bg-gray-50 rounded border border-gray-200">
+                <p className="text-xs text-gray-500">Paying days</p>
+                <p className="font-semibold text-gray-900">{payingDays} of {vendorLoanConfig.tenorDays}</p>
+              </div>
+              <div className="p-3 bg-gray-50 rounded border border-gray-200">
+                <p className="text-xs text-gray-500">Collection method</p>
+                <p className="font-semibold text-gray-900">UPI Autopay mandate, NACH fallback</p>
+              </div>
+            </div>
+            <p className="text-xs text-gray-600 mt-3">
+              The no-due days are priced into the instalment rather than added to the end of the loan — {payingDays} paying days carry the
+              full {formatINR((application as any).total_repayable || 0)}, so skipping a day never extends the tenor.
+            </p>
+          </div>
+
+          <div className="flex flex-wrap justify-between gap-3">
+            <Button variant="outline" onClick={onBack} className="px-6">Back</Button>
+            <Button
+              onClick={handleApprove}
+              disabled={!withinCapacity}
+              className="bg-[#11287c] hover:bg-[#1e3a8a] text-white px-8 py-3 text-lg font-semibold"
+            >
+              Accept & Set Up Mandate →
+            </Button>
+          </div>
+          {!withinCapacity && (
+            <p className="text-xs text-yellow-700 text-right">
+              Reset the slider to the approved amount to continue the demo.
+            </p>
+          )}
+        </div>
+      </div>
+    );
+  }
 
   // If application was already rejected at KYC for fraud, show message
   if (isFraudRejected) {
