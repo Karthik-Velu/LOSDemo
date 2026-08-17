@@ -9,8 +9,12 @@ import { OTPVerification } from "./OTPVerification";
 import { KYCVerification } from "./KYCVerification";
 import { CreditCheck } from "./CreditCheck";
 import { Disbursement } from "./Disbursement";
+import { VendorProfile } from "./VendorProfile";
+import { MandateSetup } from "./MandateSetup";
+import { CollectionsDashboard } from "./CollectionsDashboard";
+import { VENDOR_SCENARIO_ID } from "../../lib/vendorDemo";
 
-type StepKey = 'region_selector' | 'intro' | 'lead_registration' | 'farm_details' | 'otp_verification' | 'kyc' | 'credit_check' | 'disbursement';
+type StepKey = 'region_selector' | 'intro' | 'lead_registration' | 'farm_details' | 'vendor_profile' | 'otp_verification' | 'kyc' | 'credit_check' | 'mandate_setup' | 'disbursement' | 'collections';
 
 interface WorkflowStep {
   id: number;
@@ -38,8 +42,21 @@ const altDataOnlySteps: WorkflowStep[] = [
   { id: 5, key: 'disbursement', title: "Disbursement", description: "Agreement & payment" },
 ];
 
+const vendorDailySteps: WorkflowStep[] = [
+  { id: 0, key: 'region_selector', title: "Region", description: "Select region" },
+  { id: 1, key: 'intro', title: "Welcome", description: "Demo introduction" },
+  { id: 2, key: 'lead_registration', title: "Application", description: "Vendor & loan details" },
+  { id: 3, key: 'vendor_profile', title: "Business Profile", description: "Trade & daily sales" },
+  { id: 4, key: 'otp_verification', title: "Consent & Income", description: "Consent, bank link, income read" },
+  { id: 5, key: 'credit_check', title: "Credit Assessment", description: "ki score & daily instalment" },
+  { id: 6, key: 'mandate_setup', title: "Mandate Setup", description: "UPI Autopay & NACH" },
+  { id: 7, key: 'disbursement', title: "Disbursement", description: "Agreement & payment" },
+  { id: 8, key: 'collections', title: "Collections", description: "Daily mandate tracking" },
+];
+
 function getWorkflowSteps(scenarioId?: string): WorkflowStep[] {
   if (scenarioId === 'africa_agri_alt_only') return altDataOnlySteps;
+  if (scenarioId === VENDOR_SCENARIO_ID) return vendorDailySteps;
   return standardSteps;
 }
 
@@ -62,6 +79,7 @@ export const ESign = (): JSX.Element => {
       bank_rejection: 'Credit Rejection',
       africa_agri_alt_only: 'Kenya Farmer (Alt Data)',
       africa_agri_enhanced: 'Kenya Farmer (alternate data + Bureau)',
+      vendor_daily_edi: 'Street Vendor (Daily EDI)',
     };
     return scenarioId ? (labels[scenarioId] || scenarioId) : '';
   };
@@ -159,6 +177,8 @@ export const ESign = (): JSX.Element => {
   const currentStep = workflowSteps[currentStepIndex];
 
   const isPreJourney = currentStep?.key === 'region_selector' || currentStep?.key === 'intro';
+
+  const hasCollectionsStep = workflowSteps.some(s => s.key === 'collections');
 
   const currentJourneyIndex = isPreJourney ? -1 : journeySteps.findIndex(s => s.key === currentStep?.key);
 
@@ -312,6 +332,14 @@ export const ESign = (): JSX.Element => {
               onBack={moveToPreviousStep}
             />
           )}
+          {currentStep.key === 'vendor_profile' && (
+            <VendorProfile
+              application={application}
+              onUpdate={updateApplication}
+              onNext={moveToNextStep}
+              onBack={moveToPreviousStep}
+            />
+          )}
           {currentStep.key === 'otp_verification' && (
             <OTPVerification
               application={application}
@@ -336,10 +364,29 @@ export const ESign = (): JSX.Element => {
               onBack={moveToPreviousStep}
             />
           )}
+          {currentStep.key === 'mandate_setup' && (
+            <MandateSetup
+              application={application}
+              onUpdate={updateApplication}
+              onNext={moveToNextStep}
+              onBack={moveToPreviousStep}
+            />
+          )}
           {currentStep.key === 'disbursement' && (
             <Disbursement
               application={application}
               onUpdate={updateApplication}
+              onBack={moveToPreviousStep}
+              onNext={hasCollectionsStep ? moveToNextStep : undefined}
+              onRestart={() => {
+                localStorage.removeItem('mock_loan_applications');
+                window.location.reload();
+              }}
+            />
+          )}
+          {currentStep.key === 'collections' && (
+            <CollectionsDashboard
+              application={application}
               onBack={moveToPreviousStep}
               onRestart={() => {
                 localStorage.removeItem('mock_loan_applications');
